@@ -98,10 +98,11 @@ export default function Hero() {
         progressRef.current = progress;
 
         if (glowRef.current) {
-          // Finishes at progress=0.9, just ahead of the logo's own dissolve
-          // (see ParticleCanvas.jsx) — the ambient glow clears first, then
-          // the logo, then a beat of plain black before the form appears.
-          const glowOpacity = progress < 0.6 ? 1 : Math.max(0, 1 - (progress - 0.6) / 0.3);
+          // Starts fading right as the particle burst does and finishes at
+          // progress=0.9, just ahead of the particles' own dissolve (see
+          // ParticleCanvas.jsx) — the ambient glow clears first, then the
+          // particles, then a beat of plain black before the form appears.
+          const glowOpacity = progress < 0.5 ? 1 : Math.max(0, 1 - (progress - 0.5) / 0.4);
           glowRef.current.style.opacity = glowOpacity;
         }
         if (cueRef.current) {
@@ -115,11 +116,12 @@ export default function Hero() {
     return () => cancelAnimationFrame(rafId);
   }, [active]);
 
-  // 280vh = 100vh sticky viewport + 180vh of actual scroll travel, giving
-  // the text -> shatter -> logo -> dissolve sequence more room so the logo
-  // doesn't snap together too quickly.
+  // 220vh = 100vh sticky viewport + 120vh of actual scroll travel. Shorter
+  // than before because the sequence itself is shorter now: the logo no
+  // longer forms separately from the text, so there's no travel/reform
+  // phase to give room to — just assembled, shatter, dissolve.
   return (
-    <section ref={wrapperRef} className="relative h-[280dvh]">
+    <section ref={wrapperRef} className="relative h-[220dvh]">
       {/* Real, indexable heading for accessibility/SEO — the canvas/CSS
           animation below is purely decorative (aria-hidden). */}
       <h1 className="sr-only">{EVENT_NAME}</h1>

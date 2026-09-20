@@ -26,16 +26,20 @@ A sticky canvas inside a tall scroll container. Scroll position drives animation
 progress — this is a scrubbed timeline, not a timed animation. Scrolling back up
 runs it backwards.
 
+**The E-Cell logo sits above "VENTURE VAULT 3.0" from the first frame — one
+lockup, not two states of the same shape.** There is no separate "particles
+travel from the text into the logo" phase anymore; both break apart together
+and the form appears right after.
+
 | Progress | Phase | What happens |
 |---|---|---|
-| 0.00 – 0.20 | **Assembled** | "VENTURE VAULT 3.0" sharp and still. Amber glow behind. |
-| 0.20 – 0.45 | **Shatter** | Letters break into particles, drifting outward with slight turbulence. |
-| 0.45 – 0.70 | **Transit** | Particles travel toward their positions in the E-Cell logo. |
-| 0.70 – 0.85 | **Logo** | Particles settle into the logo mark + "E-CELL RBU". Brief hold. |
-| 0.85 – 1.00 | **Dissolve** | Logo fades and drifts upward; background glow dims to black. |
+| 0.00 – 0.15 | **Assembled** | Logo (crisp image) above "VENTURE VAULT 3.0" (particle cloud), both still. Amber glow behind. |
+| 0.15 – 0.60 | **Shatter** | Every particle — logo and text together — bursts outward from where it's sitting, with slight turbulence. |
+| 0.55 – 0.95 | **Dissolve** | Alpha fades to 0; background glow dims to black. Overlaps the tail of the shatter on purpose. |
 
-Container height: **300vh** on desktop, **250vh** on mobile. Mobile scrolling is
-faster per gesture, so the same height feels longer on a phone.
+Container height: **220vh** (100vh sticky viewport + 120vh of scroll travel).
+Shorter than a five-phase sequence needs, on purpose — the form should feel
+close, not like a separate destination three scrolls away.
 
 ---
 
@@ -51,13 +55,16 @@ faster per gesture, so the same height feels longer on a phone.
 **Getting logo positions:** identical process, drawing the logo PNG instead.
 This is why the logo must have a transparent background — you're sampling alpha.
 
-**Matching the two sets:** the counts won't match. Take the smaller count as your
-particle count. Shuffle both lists and pair them by index. Random pairing looks
-better than ordered pairing, which produces an unnatural sweeping motion.
+**Two independent point clouds, not one pair.** The logo's points and the text's
+points each keep their own single resting position — the logo cloud sits above
+the text cloud, forming the lockup. There's nothing to pair or shuffle-to-match
+between them, since neither one turns into the other.
 
-**Animating:** each particle stores a start point, an end point, and a per-particle
-delay/curve offset. Position is interpolated by progress with easing. Add small
-per-particle noise during transit so they don't move as a rigid block.
+**Animating:** each particle stores its resting point, a random drift angle, and a
+per-particle noise seed. "Shatter" moves it outward from that resting point along
+its own angle, distance driven by progress with easing; "dissolve" just fades
+alpha to 0. Add small per-particle noise throughout so nothing moves as a rigid
+block.
 
 ---
 

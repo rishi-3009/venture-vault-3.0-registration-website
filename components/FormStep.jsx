@@ -15,6 +15,7 @@ export default function FormStep({
   nextLabel = "Next",
   showBack = true,
   isSubmitting = false,
+  footerError,
 }) {
   const progressPct = ((step + 1) / totalSteps) * 100;
 
@@ -42,6 +43,15 @@ export default function FormStep({
       ) : null}
 
       <div className="mt-6">{children}</div>
+
+      {footerError ? (
+        <p
+          role="alert"
+          className="mt-6 rounded-lg border border-vv-error/40 bg-vv-error/10 px-3 py-2 text-[13px] text-vv-error"
+        >
+          {footerError}
+        </p>
+      ) : null}
 
       <div className="mt-8 flex gap-3">
         {showBack ? (

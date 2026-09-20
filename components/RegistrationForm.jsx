@@ -58,6 +58,7 @@ export default function RegistrationForm() {
   const [errors, setErrors] = useState({});
   const [duplicateErrors, setDuplicateErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [draftStore] = useState(createDraftStore);
   const initialDraft = useSyncExternalStore(
     draftStore.subscribe,
@@ -140,6 +141,7 @@ export default function RegistrationForm() {
         return;
       }
       setDuplicateErrors({});
+      setSubmitError(null);
       submitRegistration();
     }
   }
@@ -150,13 +152,46 @@ export default function RegistrationForm() {
     setStep(step - 1);
   }
 
-  // No backend yet — this stands in for the network round trip described in
-  // docs/ARCHITECTURE.md (POST /api/register) so the full flow can be built
-  // and tested now. Replace the body with a real fetch() once the Apps
-  // Script endpoint exists; nothing else in this file needs to change.
+  // POSTs to our own /api/register route (never straight to Apps Script —
+  // see docs/PROJECT_BRIEF.md on why that indirection exists). The draft is
+  // deliberately *not* cleared until the server confirms success, so a
+  // failed submit — bad connection, Apps Script down, whatever — leaves the
+  // user able to just tap Submit again instead of losing their answers.
   async function submitRegistration() {
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    setSubmitError(null);
+
+    let result;
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      result = await response.json();
+    } catch {
+      setIsSubmitting(false);
+      setSubmitError("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
+
+    if (!result.ok) {
+      setIsSubmitting(false);
+      // A cross-team duplicate (checked against the whole Sheet) names which
+      // of our own people it clashed on — route it onto the same per-group
+      // error display the within-team check already uses, instead of just a
+      // generic banner.
+      if (result.personKey && result.field) {
+        setDuplicateErrors((prev) => ({
+          ...prev,
+          [result.personKey]: { ...prev[result.personKey], [result.field]: result.error },
+        }));
+      } else {
+        setSubmitError(result.error || "Something went wrong. Please try again.");
+      }
+      return;
+    }
+
     setIsSubmitting(false);
     clearDraft();
     setStep(6);
@@ -247,6 +282,7 @@ export default function RegistrationForm() {
           onBack={handleBack}
           nextLabel="Submit Registration"
           isSubmitting={isSubmitting}
+          footerError={submitError}
         >
           <ReviewStep formData={formData} duplicateErrors={duplicateErrors} onEdit={setStep} />
         </FormStep>

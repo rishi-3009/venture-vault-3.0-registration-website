@@ -10,7 +10,7 @@ Read it fully before doing anything.
 A single-page, mobile-first registration website for **Venture Vault 3.0**, an
 entrepreneurship event run by **E-Cell RBU** (Ramdeobaba University, Nagpur).
 
-Teams of exactly 4 register through a multi-step form. Submissions land in a
+Teams of up to 4 register through a multi-step form. Submissions land in a
 Google Sheet. Roughly **500 registrants (~125 teams)** expected.
 
 **Hard deadline: 21 September 2026.** If the site is not deployed and tested by
@@ -44,7 +44,7 @@ These were decided by the developer. Do not change them without asking.
 | 1 | **₹0 total cost.** No paid services, no trials that expire into charges. |
 | 2 | **Mobile-first.** Registration happens almost entirely on phones. Design at 390px wide first, scale up second. |
 | 3 | Data must land in a **Google Sheet** accessible by link. |
-| 4 | Teams are **exactly 4 people**: 1 leader + 3 members. All 4 mandatory. |
+| 4 | Teams need a **leader** (mandatory); up to 3 more members are **optional** — a team can be as small as one person. Solo/partial teams get paired up by E-Cell at the event itself. The backend (`app/api/register/route.js`, `google-apps-script/Code.gs`) already supports 1–4 people; the form's UI still asks for all 4 today — the "skip this member" step is pending. See `docs/PROJECT_BRIEF.md` → "Why the backend already tolerates 1–4 people." |
 | 5 | Emails must end in **`@rbunagpur.in`**. |
 | 6 | Phone numbers: **exactly 10 digits**, Indian format. |
 | 7 | **No duplicates** — not a repeated team name, and not the same person on two teams. |

@@ -140,6 +140,16 @@ One flat object, easy to save and send:
 `PersonFields` receives one of these person objects plus a path prefix, so the
 same component drives all four.
 
+**On the wire, member1/2/3 are optional.** The form's UI today still requires
+filling in all 4 people (the "skip this member" step is pending — see
+`docs/PROJECT_BRIEF.md` → "Why the backend already tolerates 1–4 people"), but
+`app/api/register/route.js` and `google-apps-script/Code.gs` already accept
+`member1`/`member2`/`member3` as `null` for a team smaller than 4, so nothing
+on the backend needs to change when that UI gets built. This was a deliberate
+choice, not an oversight: the backend's *shape* was built ahead of the
+frontend's UI, because changing a data shape later tends to touch more files
+than changing a business rule does.
+
 ---
 
 ## Rendering model

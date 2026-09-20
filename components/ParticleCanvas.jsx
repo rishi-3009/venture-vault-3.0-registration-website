@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { EVENT_NAME } from "@/lib/config";
 
-const AMBER = [245, 166, 35];
-const AMBER_BRIGHT = [255, 193, 69];
-const WHITE = [255, 255, 255];
+const TEXT_AMBER = [245, 166, 35];
+const TEXT_AMBER_BRIGHT = [255, 193, 69];
+const LOGO_WHITE = [225, 225, 228];
+const LOGO_WHITE_BRIGHT = [255, 255, 255];
 
 // Offscreen sampling canvas for the text — generous size so the text never
 // clips; particles are normalised by half-width so the exact size doesn't
@@ -28,10 +29,7 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-function lerpColor(from, to, t) {
-  const r = Math.round(from[0] + (to[0] - from[0]) * t);
-  const g = Math.round(from[1] + (to[1] - from[1]) * t);
-  const b = Math.round(from[2] + (to[2] - from[2]) * t);
+function rgb([r, g, b]) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -63,6 +61,7 @@ function shuffle(array) {
 export default function ParticleCanvas({ tier, progressRef, active, onDowngrade }) {
   const canvasRef = useRef(null);
   const fontProbeRef = useRef(null);
+  const fontFamilyRef = useRef("sans-serif");
   const particlesRef = useRef([]);
   const logoImageRef = useRef(null);
   const dprRef = useRef(1);
@@ -76,8 +75,11 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
   // async failures below get stashed in state and re-thrown here.
   if (fatalError) throw fatalError;
 
-  // Build the particle set once per tier: sample text pixels, sample logo
-  // pixels, shuffle both lists and pair them by index.
+  // Build the particle set once per tier: sample the text and the logo into
+  // two independent point clouds. Unlike the old "shatter into logo" version,
+  // neither shape travels to the other — each particle keeps a single resting
+  // position (the logo's cloud sits above the text's — see the draw loop),
+  // so there's no pairing/shuffling-to-match-counts step anymore.
   useEffect(() => {
     let cancelled = false;
 
@@ -91,18 +93,19 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
         if (cancelled) return;
 
         const mobile = isMobileViewport();
-        // Fine enough that letterforms and the logo mark read as solid,
-        // not stippled — random point sampling needs real oversampling to
-        // look "filled" rather than speckled with gaps. The logo image is a
-        // denser shape packed into a smaller area than the text, so it needs
-        // its own (finer) step — sharing one step with text and then
-        // randomly discarding down to a shared count is what caused the
-        // logo to look sparse/grainy while the text looked fine.
+        // Fine enough that letterforms and the logo mark read as solid, not
+        // stippled — random point sampling needs real oversampling to look
+        // "filled" rather than speckled with gaps. The logo image is a denser
+        // shape packed into a smaller area than the text, so it gets its own
+        // (finer) step.
         const step = tier === 2 ? (mobile ? 7 : 5) : mobile ? 3 : 1.5;
         const logoStep = tier === 2 ? (mobile ? 6 : 4) : mobile ? 2 : 1;
 
         const fontFamily =
           getComputedStyle(fontProbeRef.current).fontFamily || "sans-serif";
+        // Kept for the draw loop, which needs it every frame to render the
+        // crisp text overlay (see below) at the current on-screen scale.
+        fontFamilyRef.current = fontFamily;
 
         const textCanvas = document.createElement("canvas");
         textCanvas.width = TEXT_CANVAS_W;
@@ -145,27 +148,43 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
           throw new Error("Particle sampling produced no points");
         }
 
+        // Same total particle budget as before, now split across two shapes
+        // instead of spent on one — proportionally to how much each one
+        // sampled, so neither is starved relative to its own detail.
         const maxParticles = tier === 2 ? (mobile ? 450 : 700) : mobile ? 3500 : 14000;
-        const count = Math.min(maxParticles, textPoints.length, logoPoints.length);
-
-        // Random pairing looks organic; pairing by index (ordered) produces
-        // an unnatural sweeping motion where particles march in lockstep.
-        const textSet = shuffle(textPoints).slice(0, count);
-        const logoSet = shuffle(logoPoints).slice(0, count);
+        const totalSampled = textPoints.length + logoPoints.length;
+        const textBudget = Math.min(
+          textPoints.length,
+          Math.round(maxParticles * (textPoints.length / totalSampled))
+        );
+        const logoBudget = Math.min(logoPoints.length, maxParticles - textBudget);
 
         const textHalf = TEXT_CANVAS_W / 2;
         const logoHalf = logo.naturalWidth / 2;
 
-        particlesRef.current = textSet.map((start, i) => ({
-          startX: (start.x - textHalf) / textHalf,
-          startY: (start.y - TEXT_CANVAS_H / 2) / textHalf,
-          endX: (logoSet[i].x - logoHalf) / logoHalf,
-          endY: (logoSet[i].y - logo.naturalHeight / 2) / logoHalf,
-          seed: Math.random() * 1000,
-          driftAngle: Math.random() * Math.PI * 2,
-          bright: Math.random() < 0.3,
-        }));
+        const textParticles = shuffle(textPoints)
+          .slice(0, textBudget)
+          .map((pt) => ({
+            group: "text",
+            x0: (pt.x - textHalf) / textHalf,
+            y0: (pt.y - TEXT_CANVAS_H / 2) / textHalf,
+            seed: Math.random() * 1000,
+            driftAngle: Math.random() * Math.PI * 2,
+            bright: Math.random() < 0.3,
+          }));
 
+        const logoParticles = shuffle(logoPoints)
+          .slice(0, logoBudget)
+          .map((pt) => ({
+            group: "logo",
+            x0: (pt.x - logoHalf) / logoHalf,
+            y0: (pt.y - logo.naturalHeight / 2) / logoHalf,
+            seed: Math.random() * 1000,
+            driftAngle: Math.random() * Math.PI * 2,
+            bright: Math.random() < 0.3,
+          }));
+
+        particlesRef.current = [...logoParticles, ...textParticles];
         fpsStatsRef.current = { frames: 0, start: 0, reported: false };
       } catch (err) {
         if (!cancelled) setFatalError(err);
@@ -245,71 +264,74 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
         const p = progressRef.current;
         const dpr = dprRef.current;
         const cx = width / 2;
-        const cy = height * 0.42;
         const mobile = width < 768 * dpr;
-        // Narrow phone screens leave a lot of empty margin at 0.42 (tuned
-        // for desktop's wider canvas), so the text reads small — bump it up
-        // on mobile to actually use the width.
-        const textScale = width * (mobile ? 0.54 : 0.42);
-        const logoScale = Math.min(width, height) * 0.28;
+
+        // Logo sits above the text, both centred on the same horizontal
+        // axis — one lockup, not two states of the same shape.
+        const logoCy = height * (mobile ? 0.3 : 0.32);
+        const textCy = height * (mobile ? 0.56 : 0.52);
+        const textScale = width * (mobile ? 0.5 : 0.38);
+        const logoScale = Math.min(width, height) * (mobile ? 0.16 : 0.2);
         const size = (tier === 2 ? 3.5 : mobile ? 1.75 : 2.5) * dpr;
 
-        // Dissolve finishes at p=0.95, not p=1 — leaving the last 5% of the
-        // scroll as guaranteed empty black. Without that buffer the fade's
-        // last frame and the sticky panel's release happen at the same
-        // scroll pixel, so any timing slop reads as "the logo is still
-        // there" right as the form appears underneath it.
+        // Three phases, all driven by scroll progress `p`:
+        //  0.00–0.15  Assembled — logo shown as the crisp source image, text
+        //             as its particle cloud at rest, nothing moving.
+        //  0.15–0.60  Shatter — every particle, logo and text together,
+        //             bursts outward from its resting spot.
+        //  0.55–0.95  Dissolve — alpha fades to 0 so the form appears on
+        //             plain black. Deliberately overlaps the shatter's tail.
+        const burstT = Math.min(1, Math.max(0, (p - 0.15) / 0.45));
+        const eased = easeInOutCubic(burstT);
+        // How much of the crisp logo image is still showing — fades out right
+        // up to where the shatter (burstT) takes over, so there's no gap
+        // where a static, grainier dot cloud is exposed before it starts moving.
+        const crispT = Math.min(1, Math.max(0, 1 - p / 0.15));
+
         let alpha = 1;
         let driftUp = 0;
-        if (p >= 0.75) {
-          const d = Math.min(1, (p - 0.75) / 0.2);
+        if (p >= 0.55) {
+          const d = Math.min(1, (p - 0.55) / 0.4);
           alpha = 1 - d;
-          driftUp = d * height * 0.15;
+          driftUp = d * height * 0.12;
         }
 
-        const shatterT = Math.min(1, Math.max(0, (p - 0.2) / 0.25));
-        const transitT = Math.min(1, Math.max(0, (p - 0.45) / 0.25));
-        const eased = easeInOutCubic(transitT);
-        const noisy = transitT > 0 && transitT < 1;
+        // Four passes (group x bright/dim). Both groups' dot clouds fade in
+        // from behind their crisp counterparts (drawn further below) instead
+        // of doubling up with them — a dot cloud alone never reads as solid
+        // the way real text/an image does, so nothing is shown as pure dots
+        // until it's actually started bursting apart.
+        const passes = [
+          { group: "text", bright: false, color: rgb(TEXT_AMBER), alpha: alpha * (1 - crispT) },
+          { group: "text", bright: true, color: rgb(TEXT_AMBER_BRIGHT), alpha: alpha * (1 - crispT) },
+          { group: "logo", bright: false, color: rgb(LOGO_WHITE), alpha: alpha * (1 - crispT) },
+          { group: "logo", bright: true, color: rgb(LOGO_WHITE_BRIGHT), alpha: alpha * (1 - crispT) },
+        ];
 
-        // Random-scatter dots can only ever look "filled" up to a point —
-        // no amount of density reads as a clean solid shape close-up. So
-        // once the particles have essentially landed, crossfade in the real
-        // logo image on top (crisp, anti-aliased) and fade the dots out
-        // underneath it, instead of asking the dots to *be* the final shape.
-        const logoRevealT = Math.min(1, Math.max(0, (transitT - 0.85) / 0.15));
-
-        ctx.globalAlpha = alpha * (1 - logoRevealT);
-
-        // Particles start amber (matching the text) and shift to white
-        // (matching the logo's actual colour) as they arrive — driven by
-        // the same `eased` value that drives their position, so colour and
-        // motion land together.
-        const dimColor = lerpColor(AMBER, WHITE, eased);
-        const brightColor = lerpColor(AMBER_BRIGHT, WHITE, eased);
-
-        for (let pass = 0; pass < 2; pass++) {
-          const isBrightPass = pass === 1;
-          ctx.fillStyle = isBrightPass ? brightColor : dimColor;
+        for (const pass of passes) {
+          if (pass.alpha <= 0) continue;
+          ctx.globalAlpha = pass.alpha;
+          ctx.fillStyle = pass.color;
 
           for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
-            if (particle.bright !== isBrightPass) continue;
+            if (particle.group !== pass.group || particle.bright !== pass.bright) continue;
 
-            const driftDist = shatterT * 0.15;
-            const shatterX = particle.startX + Math.cos(particle.driftAngle) * driftDist;
-            const shatterY = particle.startY + Math.sin(particle.driftAngle) * driftDist;
+            const baseCy = particle.group === "text" ? textCy : logoCy;
+            const scale = particle.group === "text" ? textScale : logoScale;
+            const restX = cx + particle.x0 * scale;
+            const restY = baseCy + particle.y0 * scale;
 
-            const textPxX = cx + shatterX * textScale;
-            const textPxY = cy + shatterY * textScale;
-            const logoPxX = cx + particle.endX * logoScale;
-            const logoPxY = cy + particle.endY * logoScale;
+            // Scaled by burstT so it's exactly zero at rest — otherwise the
+            // wobble (a function of seed and progress, not of burstT) keeps
+            // nudging particles even while assembled, and dense text turns
+            // ragged instead of sitting still.
+            const noiseX = wobble(particle.seed, p * 4) * 4 * dpr * burstT;
+            const noiseY = wobble(particle.seed + 50, p * 4) * 4 * dpr * burstT;
+            const burstDist = eased * scale * 0.9;
 
-            const noiseX = noisy ? wobble(particle.seed, p * 4) * 6 * dpr : 0;
-            const noiseY = noisy ? wobble(particle.seed + 50, p * 4) * 6 * dpr : 0;
-
-            const x = textPxX + (logoPxX - textPxX) * eased + noiseX;
-            const y = textPxY + (logoPxY - textPxY) * eased + noiseY - driftUp;
+            const x = restX + Math.cos(particle.driftAngle) * burstDist + noiseX;
+            const y = restY + Math.sin(particle.driftAngle) * burstDist + noiseY - driftUp;
 
             ctx.fillRect(x - size / 2, y - size / 2, size, size);
           }
@@ -317,13 +339,33 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
 
         ctx.globalAlpha = 1;
 
+        // The crisp source text — real fillText, sized and positioned to
+        // land exactly on top of the text dot cloud's resting spot, so the
+        // crossfade between the two is seamless. Same reasoning as the logo
+        // below: dots alone can't carry the first impression.
+        if (crispT > 0) {
+          ctx.globalAlpha = alpha * crispT;
+          ctx.fillStyle = rgb(TEXT_AMBER_BRIGHT);
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          // The sampling canvas drew this text at 100px within a box whose
+          // half-width (TEXT_CANVAS_W / 2) maps to `textScale` on screen —
+          // matching that ratio here reproduces the same on-screen size.
+          ctx.font = `700 ${(100 * textScale) / (TEXT_CANVAS_W / 2)}px ${fontFamilyRef.current}`;
+          ctx.fillText(EVENT_NAME.toUpperCase(), cx, textCy - driftUp);
+          ctx.globalAlpha = 1;
+        }
+
+        // The crisp source logo, visible only in that first sliver of
+        // scroll — dot-sampling alone reads as grainy for a mark this
+        // detailed, so the real image carries the first impression.
         const logoImage = logoImageRef.current;
-        if (logoImage && logoRevealT > 0) {
-          ctx.globalAlpha = alpha * logoRevealT;
+        if (logoImage && crispT > 0) {
+          ctx.globalAlpha = alpha * crispT;
           ctx.drawImage(
             logoImage,
             cx - logoScale,
-            cy - logoScale - driftUp,
+            logoCy - logoScale - driftUp,
             logoScale * 2,
             logoScale * 2
           );
