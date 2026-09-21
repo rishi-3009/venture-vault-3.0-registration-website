@@ -113,28 +113,23 @@ Once you have a transparent PNG:
 
 ## Other assets needed
 
-### Favicon
-`app/icon.png`, 512×512. The E-Cell mark on the black background works well here —
-the Instagram screenshot is actually fine for this one, cropped square, since
-there's no transparency requirement.
+### Favicon — done
+`app/icon.js`, 512×512, code-generated (not a static file). It uses the
+`ImageResponse` API built into Next.js (`next/og` — no extra dependency) to
+draw the E-Cell mark (`public/ecell-logo.png`) on the brand black background
+at request time. Next.js finds this file by name automatically and adds the
+`<link rel="icon">` tag itself — nothing to wire up in `layout.js`.
 
-### Open Graph image
-`public/og-image.jpg`, **1200×630**. This is the preview card that appears when
-the link is shared on WhatsApp — which is how essentially all 500 people will
-first see it. Worth getting right.
+### Open Graph image — done
+`app/opengraph-image.js`, **1200×630**, same `ImageResponse` approach. This is
+the preview card that appears when the link is shared on WhatsApp — which is
+how essentially all 500 people will first see it.
 
-Contents: black background, amber glow, "VENTURE VAULT 3.0", "E-Cell RBU", and
-"Register Now". Large text — WhatsApp renders this small.
+Contents: black background, amber glow, the E-Cell mark, "VENTURE VAULT 3.0",
+"E-Cell RBU", "Register Now". Large text — WhatsApp renders this small.
 
-Set it in `layout.js` metadata:
-
-```js
-openGraph: {
-  title: 'Venture Vault 3.0 — E-Cell RBU',
-  description: 'Register your team.',
-  images: ['/og-image.jpg'],
-}
-```
+Next.js again wires the `og:image` meta tags automatically — no `openGraph`
+field needed in `layout.js`'s `metadata` object.
 
 **Test the WhatsApp preview before sharing widely.** Send the deployed link to
 yourself. If the preview is broken or blank, fix it then — WhatsApp caches
@@ -168,10 +163,10 @@ pixel access via canvas.
 
 ## Asset checklist
 
-- [ ] Transparent E-Cell logo obtained (or text fallback decided)
-- [ ] Logo trimmed and placed in `public/`
-- [ ] Favicon created
-- [ ] OG image created at 1200×630
+- [x] Transparent E-Cell logo obtained (or text fallback decided)
+- [x] Logo trimmed and placed in `public/`
+- [x] Favicon created (`app/icon.js`)
+- [x] OG image created at 1200×630 (`app/opengraph-image.js`)
 - [ ] WhatsApp link preview tested on a real phone
 - [ ] Every image under 300KB
 - [ ] Nothing in the repo references 2.0 or the Licksters guests
