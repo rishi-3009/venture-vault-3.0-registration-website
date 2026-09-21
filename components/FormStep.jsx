@@ -15,6 +15,7 @@ export default function FormStep({
   nextLabel = "Next",
   showBack = true,
   isSubmitting = false,
+  submittingHint,
   footerError,
 }) {
   const progressPct = ((step + 1) / totalSteps) * 100;
@@ -73,6 +74,10 @@ export default function FormStep({
           {isSubmitting ? "Submitting…" : nextLabel}
         </button>
       </div>
+
+      {isSubmitting && submittingHint ? (
+        <p className="mt-3 text-center text-[13px] text-vv-text-faint">{submittingHint}</p>
+      ) : null}
     </div>
   );
 }

@@ -16,8 +16,15 @@ import { loadDraft, saveDraft, clearDraft } from "@/lib/draftStorage";
 
 const EMPTY_PERSON = { name: "", branch: "", branchOther: "", email: "", phone: "" };
 
+// A fingerprint for this one registration attempt, generated once and then
+// carried along with everything else (including through a page refresh, via
+// the draft). If a submission's response gets lost on a flaky connection and
+// the same attempt gets retried, the server can recognise the retry by this
+// ID and hand back the original success instead of a confusing "already
+// registered" error. See docs/GOOGLE_SHEETS_SETUP.md.
 function emptyFormData() {
   return {
+    submissionId: crypto.randomUUID(),
     teamName: "",
     leader: { ...EMPTY_PERSON },
     member1: { ...EMPTY_PERSON },
@@ -77,6 +84,12 @@ export default function RegistrationForm() {
   const showDraftBanner = Boolean(initialDraft) && !draftDismissed && !draftApplied;
   const saveTimerRef = useRef(null);
   const containerRef = useRef(null);
+  // Belt-and-braces against a double-tap: React's `disabled` on the button
+  // only takes effect after a re-render, so two taps in the same instant
+  // could both start submitRegistration() before that lands. A plain ref
+  // updates immediately, no render needed, so the second call bails
+  // straight away.
+  const submitLockRef = useRef(false);
 
   // Autosave, debounced ~300ms, skipped once registration is complete.
   useEffect(() => {
@@ -169,6 +182,8 @@ export default function RegistrationForm() {
   // failed submit — bad connection, Apps Script down, whatever — leaves the
   // user able to just tap Submit again instead of losing their answers.
   async function submitRegistration() {
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -181,12 +196,14 @@ export default function RegistrationForm() {
       });
       result = await response.json();
     } catch {
+      submitLockRef.current = false;
       setIsSubmitting(false);
       setSubmitError("Couldn't reach the server. Check your connection and try again.");
       return;
     }
 
     if (!result.ok) {
+      submitLockRef.current = false;
       setIsSubmitting(false);
       // A cross-team duplicate (checked against the whole Sheet) names which
       // of our own people it clashed on — route it onto the same per-group
@@ -295,6 +312,7 @@ export default function RegistrationForm() {
           onBack={handleBack}
           nextLabel="Submit Registration"
           isSubmitting={isSubmitting}
+          submittingHint="This can take up to 10 seconds — please don't tap again or close the page."
           footerError={submitError}
         >
           <ReviewStep formData={formData} duplicateErrors={duplicateErrors} onEdit={setStep} />

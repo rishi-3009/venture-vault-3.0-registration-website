@@ -214,6 +214,13 @@ entire submission; nothing partial gets written.
 Error messages name the specific clash. "Duplicate entry found" tells the user
 nothing and generates a WhatsApp message to the organisers.
 
+**Retries don't count as a clash against themselves.** Each submit attempt
+carries a `submissionId` generated once by the browser and reused on every
+retry of that same attempt (see `GOOGLE_SHEETS_SETUP.md`). If a team-name
+match's Submission ID matches the incoming one, the server treats it as the
+same attempt landing twice — e.g. a slow/lost response after a real
+success — and returns the original success rather than an error.
+
 ---
 
 ## Mobile input details

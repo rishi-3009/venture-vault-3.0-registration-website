@@ -7,12 +7,18 @@
  * see docs/GOOGLE_SHEETS_SETUP.md for the full walkthrough (creating the
  * Sheet, deploying this as a web app, re-deploying after edits, etc).
  *
- * Column order in row 1 of the "Registrations" tab (A–M):
+ * Column order in row 1 of the "Registrations" tab (A–N):
  *   Timestamp | Team ID | Team Name |
  *   Leader Name | Leader Branch | Leader Email | Leader Phone |
  *   Member 2 Name | Member 2 Email |
  *   Member 3 Name | Member 3 Email |
- *   Member 4 Name | Member 4 Email
+ *   Member 4 Name | Member 4 Email |
+ *   Submission ID
+ *
+ * Submission ID (column N) isn't for organisers to read — it's an internal
+ * fingerprint the frontend generates once per registration attempt, used
+ * only to detect a retried submission (see handleSubmission below). Safe to
+ * ignore, hide, or leave the column collapsed.
  *
  * A team can be as small as just a leader — member1/2/3 arrive as `null`
  * when that slot isn't part of the team, and get written as blank cells
@@ -33,6 +39,7 @@ var MEMBER_COLUMNS = [
   { key: "member2", name: 9, email: 10 },
   { key: "member3", name: 11, email: 12 },
 ];
+var SUBMISSION_ID_COL = 13;
 var ALL_PEOPLE_KEYS = [LEADER_COLUMNS.key].concat(
   MEMBER_COLUMNS.map(function (m) { return m.key; })
 );
@@ -81,10 +88,20 @@ function handleSubmission(e) {
 
   var teamName = (data.teamName || "").trim();
   var teamNameLower = teamName.toLowerCase();
+  var submissionId = (data.submissionId || "").trim();
 
   // 1. Team name, against every existing row.
   for (var r = 0; r < rows.length; r++) {
     if (String(rows[r][TEAM_NAME_COL]).trim().toLowerCase() === teamNameLower) {
+      // Before treating this as a genuine clash: is it actually the same
+      // submission attempt landing twice (e.g. the first attempt's response
+      // got lost on a flaky connection, and the user just retried)? The
+      // frontend sends the same submissionId on every retry of one attempt,
+      // so a match here means "you already registered, here's your original
+      // Team ID" rather than "someone else has this name."
+      if (submissionId && String(rows[r][SUBMISSION_ID_COL]).trim() === submissionId) {
+        return { ok: true, teamId: rows[r][1] };
+      }
       return {
         ok: false,
         error: 'A team called "' + teamName + '" has already registered. Please pick a different name.',
@@ -158,13 +175,9 @@ function handleSubmission(e) {
     row.push(person ? person.email : "");
   });
 
-  sheet.appendRow(row);
+  row.push(submissionId);
 
-  // Force the Timestamp column to dd/mm/yyyy regardless of the Sheet's own
-  // locale setting — otherwise a US-locale Sheet shows 9/21/26 (month first),
-  // which reads as a different date entirely to anyone expecting the Indian
-  // day-first format.
-  sheet.getRange(sheet.getLastRow(), 1).setNumberFormat("dd/mm/yyyy hh:mm:ss");
+  sheet.appendRow(row);
 
   return { ok: true, teamId: teamId };
 }

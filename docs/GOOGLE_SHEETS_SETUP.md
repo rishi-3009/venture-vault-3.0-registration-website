@@ -34,21 +34,35 @@ something POSTs to it.
 
 ## Step 2 — Add the header row
 
-In row 1, cells A1 through M1, in this exact order:
+In row 1, cells A1 through N1, in this exact order:
 
 ```
 Timestamp | Team ID | Team Name |
 Leader Name | Leader Branch | Leader Email | Leader Phone |
 Member 2 Name | Member 2 Email |
 Member 3 Name | Member 3 Email |
-Member 4 Name | Member 4 Email
+Member 4 Name | Member 4 Email |
+Submission ID
 ```
 
 Only the leader has Branch and Phone columns — members 2-4 only ever provide
 Name and Email (see `FORM_SPEC.md`), so there's nothing to put in a
 Branch/Phone column for them.
 
+**Column N, Submission ID, isn't meant for you to read.** It's a fingerprint
+the website generates so a resubmission caused by a lost/slow response
+doesn't get wrongly rejected as a duplicate team name — see "Why submissions
+sometimes seemed to fail" near the bottom of this doc. Feel free to narrow or
+hide the column; just don't delete it.
+
 Then View → Freeze → 1 row, so headers stay visible while scrolling.
+
+**Also format column A now, once:** select the whole column A → **Format →
+Number → Custom date and time** → enter `dd/mm/yyyy hh:mm:ss` → Apply. New
+rows appended by the script inherit this automatically, so it only needs
+doing this one time — otherwise a US-locale Sheet shows timestamps like
+`9/21/26` (month first), which reads as a different date to anyone expecting
+the Indian day-first format.
 
 ## Step 3 — Open the script editor
 
@@ -67,7 +81,9 @@ Ask Claude Code to write this. It must implement all of the following:
    Script Properties. Reject with an error if it doesn't match.
 4. Reads all existing rows once into memory.
 5. Runs the duplicate checks from `FORM_SPEC.md` — team name, all emails, all
-   phones.
+   phones. Before rejecting a team-name clash, checks whether the matching
+   row's Submission ID equals the incoming one — if so this is a retry of an
+   attempt that already succeeded, not a real clash (see below).
 6. If clean, appends one row in the exact column order above, with a timestamp
    and a Team ID (sequential: existing row count + 1 — safe from collisions
    because the lock from step 1 is still held).
@@ -78,6 +94,17 @@ Ask Claude Code to write this. It must implement all of the following:
 read the Sheet, both see no duplicate, and both write. The lock forces them into
 a queue. With 125 teams it's unlikely — but it's three lines of code and the
 failure mode is silent corruption.
+
+**Why submissions sometimes seemed to fail.** Apps Script is genuinely slow —
+often close to the full 10 seconds — because every submission wakes the
+script up, reads the whole Sheet, and scans it before writing. On a flaky
+mobile connection, the *response* can get lost even though the row was
+written successfully. The person sees nothing happen, taps Submit again, and
+the retry (same team name) gets rejected as "already registered" — confusing,
+because from their side it looked like a first attempt. Submission ID exists
+to fix exactly this: the frontend generates it once per attempt and resends
+the same one on every retry, so the script can recognise a retry and hand
+back the original success instead of an error.
 
 **Why the shared secret.** Even though the URL is server-side, if it ever leaks
 the secret is a second barrier. Generate a long random string, store it in Apps
@@ -123,9 +150,11 @@ Restart the dev server. Add the same two variables in Vercel later — see
 
 Submit a team with team name `TEST-001` and obviously fake details. Check:
 
-- [ ] A row appears in the Sheet with every column correct
+- [ ] A row appears in the Sheet with every column correct, including a
+      Submission ID in column N
 - [ ] Its Team ID column has a number, and that same number shows on the success screen
-- [ ] Submitting `TEST-001` again is rejected for duplicate team name
+- [ ] Submitting `TEST-001` **again, from a fresh page load** (a genuinely
+      different attempt) is rejected for duplicate team name
 - [ ] A different team name reusing one of those emails is rejected
 - [ ] Same for a reused phone number
 - [ ] The success screen shows

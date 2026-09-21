@@ -131,8 +131,15 @@ export async function POST(request) {
     );
   }
 
+  // Passed straight through to Apps Script so it can tell "this exact
+  // attempt already succeeded, the response just got lost" apart from a
+  // genuinely different team reusing the same name. See
+  // docs/GOOGLE_SHEETS_SETUP.md.
+  const submissionId = typeof body.submissionId === "string" ? body.submissionId.trim() : "";
+
   const payload = {
     secret,
+    submissionId,
     teamName: normalizeTeamName(body.teamName),
     leader: normalizedLeader,
     member1: normalizedMembers.member1,
