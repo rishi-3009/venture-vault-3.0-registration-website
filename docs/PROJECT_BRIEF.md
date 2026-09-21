@@ -43,8 +43,9 @@ Recorded so nobody relitigates them mid-build.
 | Backend | Apps Script now, upgradeable to a Google service account later | Fastest path to working, without painting us into a corner |
 | Particle animation | Build the full version, with a simplified fallback designed in from day one | Ambitious but with an escape hatch |
 | Games | All teams play all three, in fixed order | No game-selection field needed |
-| Email domain | Must end `@rbunagpur.in` | Keeps outsiders out |
-| Team size | 1–4, only the leader mandatory | Solo/partial teams register anyway; E-Cell pairs them up into full teams at the event. Backend already supports this (see below); form UI still asks for all 4 — the skip-this-member UI is pending. |
+| Email domain | Must end `@rbunagpur.in`, and the local part must start `26` | Keeps outsiders out, and the `26` prefix (2026 admission year) restricts registration to first years — this resolves open question #1 below |
+| Team size | 1–4, only the leader mandatory | Solo/partial teams register anyway; E-Cell pairs them up into full teams at the event. Backend supports this (see below); the form asks for all 4, but members 2-4 are visibly optional and skipped by simply leaving them blank — no separate "skip" control. |
+| Member fields | Leader fills Name, Branch, Email, Phone. Members 2-4 fill only Name + Email. | Members aren't the point of contact, and asking for Branch/Phone from people who might not even end up on this team added friction for no benefit. |
 | Duplicates | Blocked, by team name and by person | Prevents double-registration mess |
 | Registration cap | None for now | Can be added later |
 | Draft saving | Yes, local | College wifi is unreliable |
@@ -92,9 +93,10 @@ tolerates anywhere from 1–4. Since solo/partial teams were already decided
 (see the decisions table above), the backend was built from day one to accept
 a leader plus 0–3 members — `member1`/`member2`/`member3` can each be `null`,
 duplicate-checks skip whichever ones are missing, and the Sheet just gets a
-blank cell for an absent member instead of an empty string. This means: when
-the form's own "skip this member" UI eventually gets built, **the backend
-needs zero changes** — it already speaks that shape.
+blank cell for an absent member instead of an empty string. This paid off when
+the form's own member-skipping was built: leaving a member step blank (no
+dedicated "skip" button needed — see `FORM_SPEC.md`) required **zero backend
+changes**, since the shape it produces was already what the backend expected.
 
 **What still isn't automatic:** the actual *rule* — how many people are
 required, which fields are mandatory — is a business decision, not something
@@ -126,11 +128,12 @@ The scale is not a risk. The animation performance and the deadline are the risk
 
 Resolve these before launch. Ask the developer; don't guess.
 
-1. **Is there a year/semester field?** The 2.0 poster said "exclusively for 1st
-   years." If 3.0 has the same restriction, the form needs a year field and a
-   validation rule. Currently not built.
-2. **What is the official list of RBU branches/programmes?** `FORM_SPEC.md` has a
-   draft list that **must be verified** against the official one before launch.
+1. ~~**Is there a year/semester field?**~~ **Resolved:** no separate field —
+   the RBU email's `26` prefix (2026 admission year) already restricts
+   registration to first years, so a dedicated year field would be redundant.
+2. ~~**What is the official list of RBU branches/programmes?**~~ **Resolved:**
+   11 options, confirmed by the developer — see `lib/config.js` and
+   `FORM_SPEC.md`.
 3. **Post-submission text** is currently a placeholder. Needs real copy.
 4. **WhatsApp group link** doesn't exist yet. The success screen has a slot for it
    that stays hidden until a link is added to config.

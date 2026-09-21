@@ -2,7 +2,7 @@
 
 import { WHATSAPP_INVITE_LINK } from "@/lib/config";
 
-export default function SuccessScreen({ teamName }) {
+export default function SuccessScreen({ teamName, teamId }) {
   return (
     <div className="mx-auto w-full max-w-[480px] rounded-[20px] border border-vv-border bg-vv-surface p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.4)] md:p-8">
       <div className="text-4xl">🎉</div>
@@ -12,6 +12,15 @@ export default function SuccessScreen({ teamName }) {
       <p className="mt-2 text-sm text-vv-text-muted">
         Team &ldquo;{teamName}&rdquo; is confirmed for Venture Vault 3.0.
       </p>
+
+      {teamId ? (
+        <div className="mt-3">
+          <p className="text-sm text-vv-text-muted">
+            Your Team ID: <span className="font-semibold text-vv-amber">{teamId}</span> — remember this.
+          </p>
+          <p className="mt-1 text-[13px] text-vv-text-faint">Take a screenshot.</p>
+        </div>
+      ) : null}
 
       {WHATSAPP_INVITE_LINK ? (
         <div className="mt-6 border-t border-vv-border pt-6">

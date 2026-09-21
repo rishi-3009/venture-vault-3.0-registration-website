@@ -2,17 +2,11 @@ import {
   validateTeamName,
   normalizeTeamName,
   validatePerson,
+  validateMember,
+  isMemberFilled,
   normalizeEmail,
   normalizePhone,
 } from "@/lib/validation";
-
-// Members 2-4 are optional (see docs/PROJECT_BRIEF.md — a team can be just a
-// leader; E-Cell pairs solo/partial teams up at the event). A slot only
-// needs re-validating here if the client actually put a name in it — an
-// empty one is a real, supported team size, not bad data.
-function isPersonFilled(person) {
-  return Boolean((person?.name || "").trim());
-}
 
 // Resolves "Other" + branchOther down to a single branch string, and
 // normalises email/phone the same way lib/validation.js's normalizers do —
@@ -66,12 +60,14 @@ export async function POST(request) {
 
   // Validate whichever of member1/2/3 were actually filled in; leave the
   // rest as null so the Sheet gets a blank cell instead of empty strings
-  // scattered through the row.
+  // scattered through the row. Members only ever provide name + email — no
+  // branch, no phone (see docs/FORM_SPEC.md) — so they're checked with
+  // validateMember, not the leader's validatePerson.
   const members = {};
   for (const key of MEMBER_KEYS) {
     const person = body[key];
-    if (isPersonFilled(person)) {
-      const personErrors = validatePerson(person);
+    if (isMemberFilled(person)) {
+      const personErrors = validateMember(person);
       if (Object.keys(personErrors).length > 0) {
         return Response.json(
           {
@@ -103,23 +99,25 @@ export async function POST(request) {
     normalizedMembers.member2,
     normalizedMembers.member3,
   ].filter(Boolean);
+  // Guarded on truthy values: members don't submit a phone at all, so two
+  // members both having a blank phone must NOT count as a "duplicate" phone.
   const emailSeen = new Set();
   const phoneSeen = new Set();
   for (const person of people) {
-    if (emailSeen.has(person.email)) {
+    if (person.email && emailSeen.has(person.email)) {
       return Response.json(
         { ok: false, error: "The same email is used by two people on this team." },
         { status: 400 }
       );
     }
-    if (phoneSeen.has(person.phone)) {
+    if (person.phone && phoneSeen.has(person.phone)) {
       return Response.json(
         { ok: false, error: "The same phone number is used by two people on this team." },
         { status: 400 }
       );
     }
-    emailSeen.add(person.email);
-    phoneSeen.add(person.phone);
+    if (person.email) emailSeen.add(person.email);
+    if (person.phone) phoneSeen.add(person.phone);
   }
 
   const scriptUrl = process.env.APPS_SCRIPT_URL;

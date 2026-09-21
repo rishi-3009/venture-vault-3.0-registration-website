@@ -7,29 +7,35 @@
  * see docs/GOOGLE_SHEETS_SETUP.md for the full walkthrough (creating the
  * Sheet, deploying this as a web app, re-deploying after edits, etc).
  *
- * Column order in row 1 of the "Registrations" tab (A–T):
- *   Timestamp | Submission ID | Team Name |
+ * Column order in row 1 of the "Registrations" tab (A–M):
+ *   Timestamp | Team ID | Team Name |
  *   Leader Name | Leader Branch | Leader Email | Leader Phone |
- *   Member 2 Name | Member 2 Branch | Member 2 Email | Member 2 Phone |
- *   Member 3 Name | Member 3 Branch | Member 3 Email | Member 3 Phone |
- *   Member 4 Name | Member 4 Branch | Member 4 Email | Member 4 Phone
+ *   Member 2 Name | Member 2 Email |
+ *   Member 3 Name | Member 3 Email |
+ *   Member 4 Name | Member 4 Email
  *
  * A team can be as small as just a leader — member1/2/3 arrive as `null`
  * when that slot isn't part of the team, and get written as blank cells
  * (see docs/PROJECT_BRIEF.md: solo/partial teams are paired up at the event).
+ * Only the leader has Branch/Phone columns — members 2-4 only ever provide
+ * Name + Email (see docs/FORM_SPEC.md), so there's no column for them to
+ * leave blank in the first place.
  */
 
 var SHEET_NAME = "Registrations";
 
-// 0-indexed column positions for the four possible people, used by the
-// duplicate scan below. Team Name is column index 2.
+// 0-indexed column positions, used by the duplicate scan and row-building
+// below. Team Name is column index 2.
 var TEAM_NAME_COL = 2;
-var PEOPLE_COLUMNS = [
-  { key: "leader", name: 3, branch: 4, email: 5, phone: 6 },
-  { key: "member1", name: 7, branch: 8, email: 9, phone: 10 },
-  { key: "member2", name: 11, branch: 12, email: 13, phone: 14 },
-  { key: "member3", name: 15, branch: 16, email: 17, phone: 18 },
+var LEADER_COLUMNS = { key: "leader", name: 3, branch: 4, email: 5, phone: 6 };
+var MEMBER_COLUMNS = [
+  { key: "member1", name: 7, email: 8 },
+  { key: "member2", name: 9, email: 10 },
+  { key: "member3", name: 11, email: 12 },
 ];
+var ALL_PEOPLE_KEYS = [LEADER_COLUMNS.key].concat(
+  MEMBER_COLUMNS.map(function (m) { return m.key; })
+);
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -92,11 +98,13 @@ function handleSubmission(e) {
   // is one of our own submitted slots (leader/member1/2/3) — the thing the
   // frontend needs in order to show the error next to the right person,
   // regardless of which column of someone else's row it matched.
-  var emailCols = PEOPLE_COLUMNS.map(function (p) { return p.email; });
-  var phoneCols = PEOPLE_COLUMNS.map(function (p) { return p.phone; });
+  var emailCols = [LEADER_COLUMNS.email].concat(
+    MEMBER_COLUMNS.map(function (m) { return m.email; })
+  );
+  var phoneCols = [LEADER_COLUMNS.phone]; // only the leader has a phone column
 
-  for (var i = 0; i < PEOPLE_COLUMNS.length; i++) {
-    var personKey = PEOPLE_COLUMNS[i].key;
+  for (var i = 0; i < ALL_PEOPLE_KEYS.length; i++) {
+    var personKey = ALL_PEOPLE_KEYS[i];
     var person = data[personKey];
     if (!person) continue; // slot not part of this team
 
@@ -130,21 +138,35 @@ function handleSubmission(e) {
     }
   }
 
-  // Clean — append the row. Missing members become blank cells.
-  var submissionId = Utilities.getUuid();
-  var row = [new Date(), submissionId, teamName];
+  // Clean — append the row. Missing members become blank cells. Team ID is
+  // just "how many teams came before this one, plus one" — sequential and
+  // human-readable, so anyone can Ctrl+F it straight in the Sheet. Safe from
+  // collisions because doPost holds the script lock for the whole request,
+  // so no two submissions ever compute this at the same time.
+  var teamId = rows.length + 1;
+  var row = [new Date(), teamId, teamName];
 
-  PEOPLE_COLUMNS.forEach(function (col) {
+  var leader = data.leader;
+  row.push(leader ? leader.name : "");
+  row.push(leader ? leader.branch : "");
+  row.push(leader ? leader.email : "");
+  row.push(leader ? leader.phone : "");
+
+  MEMBER_COLUMNS.forEach(function (col) {
     var person = data[col.key];
     row.push(person ? person.name : "");
-    row.push(person ? person.branch : "");
     row.push(person ? person.email : "");
-    row.push(person ? person.phone : "");
   });
 
   sheet.appendRow(row);
 
-  return { ok: true, submissionId: submissionId };
+  // Force the Timestamp column to dd/mm/yyyy regardless of the Sheet's own
+  // locale setting — otherwise a US-locale Sheet shows 9/21/26 (month first),
+  // which reads as a different date entirely to anyone expecting the Indian
+  // day-first format.
+  sheet.getRange(sheet.getLastRow(), 1).setNumberFormat("dd/mm/yyyy hh:mm:ss");
+
+  return { ok: true, teamId: teamId };
 }
 
 function respond(obj) {

@@ -26,23 +26,38 @@ Errors:
 - Bad characters → `Team name can only use letters, numbers, spaces and hyphens.`
 - Duplicate (server) → `A team called "X" has already registered. Please pick a different name.`
 
-Helper text: *Teams are 4 people — 1 leader and 3 members. You'll add everyone next.*
+Helper text: *Teams can have up to 4 people. Only the leader is required — members 2-4 are optional.*
 
 ---
 
 ## Steps 1–4 — People
 
-Identical fields four times. Only headings change.
+The leader (step 1) fills all four fields below. Members 2-4 only fill
+**Full Name** and **RBU Email** — no Branch/Programme, no Phone. They're
+optional: a team can be just a leader, and E-Cell pairs solo/partial teams
+up at the event (see `PROJECT_BRIEF.md`).
 
-| Step | Heading | Sub-heading |
-|---|---|---|
-| 1 | Team Leader | This is who we'll contact about the event |
-| 2 | Member 2 | |
-| 3 | Member 3 | |
-| 4 | Member 4 | |
+There's no explicit "skip this member" button — a member step is simply left
+blank to skip it. It only needs to validate if it was touched (see "Skipping
+a member," below).
+
+| Step | Heading | Sub-heading | Fields shown |
+|---|---|---|---|
+| 1 | Team Leader | This is who we'll contact about the event | Name, Branch, Email, Phone |
+| 2 | Member 2 (Optional) | | Name, Email |
+| 3 | Member 3 (Optional) | | Name, Email |
+| 4 | Member 4 (Optional) | | Name, Email |
 
 > Note the labelling: the leader is member 1 of 4. Calling the next three
 > "Member 1/2/3" reads as a fifth and sixth person. Use "Member 2, 3, 4."
+
+### Skipping a member
+
+A member step counts as "being added" the moment either Name or Email has
+something in it. If both are empty, Next just advances — that member simply
+isn't part of the team. If only one of the two has something, both are then
+required (so a half-typed name with no email can't slip through as a silent
+skip).
 
 ### Field: Full Name
 
@@ -59,27 +74,24 @@ Identical fields four times. Only headings change.
 
 ### Field: Branch / Programme
 
+**Leader only** — members 2-4 don't have this field.
+
 A **dropdown**, not free text. Free text produces "CSE", "cse", "Comp Sci",
 "Computer Science Engg" in the same column and makes the Sheet painful to sort.
 
-Draft list — **must be verified against the official RBU list before launch:**
+Confirmed list (see `lib/config.js`):
 
 ```
 Computer Science & Engineering
-Computer Science & Engineering (AI & ML)
-Computer Science & Engineering (Data Science)
-Computer Science & Engineering (IoT & Cyber Security)
-Information Technology
-Electronics & Communication Engineering
-Electronics Engineering
+Computer Science & Engineering (SAP)
+BCA
 Electrical Engineering
-Mechanical Engineering
+Electronics & Computer Science
+Electronics & Communication Engineering
+Robotics & Artificial Intelligence
 Civil Engineering
-Industrial Engineering
-Biotechnology (if offered)
-MBA
-MCA
-B. Architecture (if offered)
+Mechanical Engineering
+BBA
 Other
 ```
 
@@ -95,6 +107,7 @@ Selecting **Other** reveals a text input (required, 2–50 chars).
 | Required | Yes |
 | Format | Valid email shape |
 | Domain | Must end `@rbunagpur.in` (case-insensitive) |
+| Prefix | Must start with `26` — encodes the 2026 admission year, so this is what restricts registration to first years |
 | Normalisation | Trim, lowercase before storing |
 | Input hints | `type="email"`, `inputmode="email"`, `autocapitalize="off"`, `autocorrect="off"` |
 | Uniqueness | Server-side, across every email in the Sheet |
@@ -102,6 +115,7 @@ Selecting **Other** reveals a text input (required, 2–50 chars).
 - Empty → `Email is required.`
 - Malformed → `That doesn't look like a valid email address.`
 - Wrong domain → `Please use your RBU email address (ending in @rbunagpur.in).`
+- Wrong prefix → `Please use your RBU email address (starts with 26, e.g. 26xxxxxxx@rbunagpur.in).`
 - Duplicate → `This email is already registered with team "X". Each person can only be in one team.`
 - Duplicate within this form → `This email is already used by another member of your team.`
 
@@ -110,6 +124,8 @@ Selecting **Other** reveals a text input (required, 2–50 chars).
 > Lowercasing on save handles it, but turning the keyboard behaviour off is cleaner.
 
 ### Field: Phone Number
+
+**Leader only** — members 2-4 don't have this field.
 
 | Rule | Value |
 |---|---|
@@ -135,7 +151,10 @@ Selecting **Other** reveals a text input (required, 2–50 chars).
 ## Step 5 — Review
 
 Show everything entered, grouped by person, read-only. Each group gets an **Edit**
-link that jumps back to that step and returns to review on Next.
+link that jumps back to that step and returns to review on Next. A member that
+was left blank (no name, no email) still shows its group — Name/Email just
+read **NIL** rather than being hidden. Members never show Branch/Phone rows at
+all, since those fields don't exist for them (leader only).
 
 A final line: *Please check carefully — you won't be able to edit after submitting.*
 
@@ -156,10 +175,17 @@ Currently a placeholder; real copy pending.
 
 Team "<TEAM NAME>" is confirmed for Venture Vault 3.0.
 
+Your Team ID: <TEAM ID> — remember this.
+
 [WhatsApp block — hidden until a link exists in config]
 Join the participants' group for updates:
 [ Join WhatsApp Group ]
 ```
+
+Team ID is whatever number the Apps Script returned for this submission (see
+`GOOGLE_SHEETS_SETUP.md`) — the same number that's in column B of the Sheet, so
+it's how organisers find this team fast. Nothing shows if the submission
+response didn't include one.
 
 The WhatsApp block reads `WHATSAPP_INVITE_LINK` from `lib/config.js`. If it's an
 empty string the whole block doesn't render. Adding the link later is a one-line
@@ -176,10 +202,13 @@ entire submission; nothing partial gets written.
 
 1. **Team name** — case-insensitive, whitespace-collapsed match against any
    existing team name.
-2. **Email** — normalised lowercase match against all 4 email columns of every row.
-3. **Phone** — normalised 10-digit match against all 4 phone columns of every row.
-4. **Within-team** — the 4 emails must differ from each other, and the 4 phones
-   must differ from each other. Check this client-side too, at the review step,
+2. **Email** — normalised lowercase match against every email column of every row,
+   for whichever of the 4 people were actually submitted.
+3. **Phone** — normalised 10-digit match against the phone column of every row.
+   Only the leader has a phone, so this only ever runs on the leader's number.
+4. **Within-team** — every submitted email must differ from every other submitted
+   email, same for phone. A blank phone (any member) never counts as a clash
+   with another blank phone. Check this client-side too, at the review step,
    since it needs no server round-trip.
 
 Error messages name the specific clash. "Duplicate entry found" tells the user

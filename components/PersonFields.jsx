@@ -21,11 +21,12 @@ const inputClass = (hasError) =>
     hasError ? "border-vv-error" : "border-vv-border"
   }`;
 
-// name/branch/email/phone — the same four fields for the leader and every
-// member. `prefix` namespaces the input ids/names (e.g. "leader", "member2")
-// so labels stay associated with the right field even though this component
-// renders four times on the page across different steps.
-export default function PersonFields({ prefix, person, errors, onChange, autoFocus }) {
+// The leader fills all four fields (name/branch/email/phone). Members 2-4
+// only fill name + email — see docs/FORM_SPEC.md. `showBranchAndPhone`
+// switches those two blocks off for a member step. `prefix` namespaces the
+// input ids/names (e.g. "leader", "member2") so labels stay associated with
+// the right field even though this component renders across different steps.
+export default function PersonFields({ prefix, person, errors, onChange, autoFocus, showBranchAndPhone = true }) {
   const field = (name) => `${prefix}-${name}`;
 
   return (
@@ -49,43 +50,45 @@ export default function PersonFields({ prefix, person, errors, onChange, autoFoc
         <ErrorText id={field("name-error")} message={errors.name} />
       </div>
 
-      <div>
-        <label htmlFor={field("branch")} className="mb-1.5 block text-sm text-vv-text-muted">
-          Branch / Programme
-        </label>
-        <select
-          id={field("branch")}
-          name="branch"
-          value={person.branch}
-          onChange={(e) => onChange("branch", e.target.value)}
-          aria-describedby={errors.branch ? field("branch-error") : undefined}
-          className={`${inputClass(Boolean(errors.branch))} appearance-none`}
-        >
-          <option value="">Select your branch</option>
-          {BRANCHES.map((branch) => (
-            <option key={branch} value={branch}>
-              {branch}
-            </option>
-          ))}
-        </select>
-        <ErrorText id={field("branch-error")} message={errors.branch} />
+      {showBranchAndPhone ? (
+        <div>
+          <label htmlFor={field("branch")} className="mb-1.5 block text-sm text-vv-text-muted">
+            Branch / Programme
+          </label>
+          <select
+            id={field("branch")}
+            name="branch"
+            value={person.branch}
+            onChange={(e) => onChange("branch", e.target.value)}
+            aria-describedby={errors.branch ? field("branch-error") : undefined}
+            className={`${inputClass(Boolean(errors.branch))} appearance-none`}
+          >
+            <option value="">Select your branch</option>
+            {BRANCHES.map((branch) => (
+              <option key={branch} value={branch}>
+                {branch}
+              </option>
+            ))}
+          </select>
+          <ErrorText id={field("branch-error")} message={errors.branch} />
 
-        {person.branch === "Other" ? (
-          <div className="mt-3">
-            <label htmlFor={field("branch-other")} className="mb-1.5 block text-sm text-vv-text-muted">
-              Type your branch
-            </label>
-            <input
-              id={field("branch-other")}
-              name="branchOther"
-              type="text"
-              value={person.branchOther}
-              onChange={(e) => onChange("branchOther", e.target.value)}
-              className={inputClass(false)}
-            />
-          </div>
-        ) : null}
-      </div>
+          {person.branch === "Other" ? (
+            <div className="mt-3">
+              <label htmlFor={field("branch-other")} className="mb-1.5 block text-sm text-vv-text-muted">
+                Type your branch
+              </label>
+              <input
+                id={field("branch-other")}
+                name="branchOther"
+                type="text"
+                value={person.branchOther}
+                onChange={(e) => onChange("branchOther", e.target.value)}
+                className={inputClass(false)}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div>
         <label htmlFor={field("email")} className="mb-1.5 block text-sm text-vv-text-muted">
@@ -107,24 +110,26 @@ export default function PersonFields({ prefix, person, errors, onChange, autoFoc
         <ErrorText id={field("email-error")} message={errors.email} />
       </div>
 
-      <div>
-        <label htmlFor={field("phone")} className="mb-1.5 block text-sm text-vv-text-muted">
-          Phone Number
-        </label>
-        <input
-          id={field("phone")}
-          name="phone"
-          type="tel"
-          inputMode="numeric"
-          autoComplete="tel"
-          placeholder="98765 43210"
-          value={person.phone}
-          onChange={(e) => onChange("phone", e.target.value)}
-          aria-describedby={errors.phone ? field("phone-error") : undefined}
-          className={inputClass(Boolean(errors.phone))}
-        />
-        <ErrorText id={field("phone-error")} message={errors.phone} />
-      </div>
+      {showBranchAndPhone ? (
+        <div>
+          <label htmlFor={field("phone")} className="mb-1.5 block text-sm text-vv-text-muted">
+            Phone Number
+          </label>
+          <input
+            id={field("phone")}
+            name="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            placeholder="98765 43210"
+            value={person.phone}
+            onChange={(e) => onChange("phone", e.target.value)}
+            aria-describedby={errors.phone ? field("phone-error") : undefined}
+            className={inputClass(Boolean(errors.phone))}
+          />
+          <ErrorText id={field("phone-error")} message={errors.phone} />
+        </div>
+      ) : null}
     </div>
   );
 }

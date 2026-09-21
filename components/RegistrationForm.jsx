@@ -9,6 +9,7 @@ import {
   validateTeamName,
   normalizeTeamName,
   validatePerson,
+  validateMember,
   validateWithinTeamDuplicates,
 } from "@/lib/validation";
 import { loadDraft, saveDraft, clearDraft } from "@/lib/draftStorage";
@@ -29,7 +30,12 @@ function emptyFormData() {
 // the terminal success screen (not counted in "Step X of 6").
 const TOTAL_STEPS = 6;
 const PERSON_STEP_KEYS = { 1: "leader", 2: "member1", 3: "member2", 4: "member3" };
-const STEP_TITLES = { 1: "Team Leader", 2: "Member 2", 3: "Member 3", 4: "Member 4" };
+const STEP_TITLES = {
+  1: "Team Leader",
+  2: "Member 2 (Optional)",
+  3: "Member 3 (Optional)",
+  4: "Member 4 (Optional)",
+};
 
 // Reads localStorage exactly once per mount without a hydration mismatch:
 // the server (and the client's first hydration pass) always see `null`,
@@ -59,6 +65,7 @@ export default function RegistrationForm() {
   const [duplicateErrors, setDuplicateErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [teamId, setTeamId] = useState(null);
   const [draftStore] = useState(createDraftStore);
   const initialDraft = useSyncExternalStore(
     draftStore.subscribe,
@@ -124,7 +131,11 @@ export default function RegistrationForm() {
 
     if (step >= 1 && step <= 4) {
       const personKey = PERSON_STEP_KEYS[step];
-      const personErrors = validatePerson(formData[personKey]);
+      // The leader (step 1) is always required in full. Members 2-4 are
+      // optional — validateMember only complains if the step was touched but
+      // left half-done (e.g. a name with no email).
+      const personErrors =
+        step === 1 ? validatePerson(formData[personKey]) : validateMember(formData[personKey]);
       if (Object.keys(personErrors).length > 0) {
         setErrors(personErrors);
         return;
@@ -193,12 +204,13 @@ export default function RegistrationForm() {
     }
 
     setIsSubmitting(false);
+    setTeamId(result.teamId);
     clearDraft();
     setStep(6);
   }
 
   if (step === 6) {
-    return <SuccessScreen teamName={formData.teamName} />;
+    return <SuccessScreen teamName={formData.teamName} teamId={teamId} />;
   }
 
   return (
@@ -247,7 +259,7 @@ export default function RegistrationForm() {
               </p>
             ) : null}
             <p className="mt-2 text-[13px] text-vv-text-muted">
-              Teams are 4 people — 1 leader and 3 members. You&apos;ll add everyone next.
+              Teams can have up to 4 people. Only the leader is required — members 2-4 are optional.
             </p>
           </div>
         </FormStep>
@@ -269,6 +281,7 @@ export default function RegistrationForm() {
             errors={errors}
             onChange={(field, value) => updatePersonField(PERSON_STEP_KEYS[step], field, value)}
             autoFocus
+            showBranchAndPhone={step === 1}
           />
         </FormStep>
       )}

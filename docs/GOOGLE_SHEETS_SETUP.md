@@ -34,15 +34,19 @@ something POSTs to it.
 
 ## Step 2 — Add the header row
 
-In row 1, cells A1 through T1, in this exact order:
+In row 1, cells A1 through M1, in this exact order:
 
 ```
-Timestamp | Submission ID | Team Name |
+Timestamp | Team ID | Team Name |
 Leader Name | Leader Branch | Leader Email | Leader Phone |
-Member 2 Name | Member 2 Branch | Member 2 Email | Member 2 Phone |
-Member 3 Name | Member 3 Branch | Member 3 Email | Member 3 Phone |
-Member 4 Name | Member 4 Branch | Member 4 Email | Member 4 Phone
+Member 2 Name | Member 2 Email |
+Member 3 Name | Member 3 Email |
+Member 4 Name | Member 4 Email
 ```
+
+Only the leader has Branch and Phone columns — members 2-4 only ever provide
+Name and Email (see `FORM_SPEC.md`), so there's nothing to put in a
+Branch/Phone column for them.
 
 Then View → Freeze → 1 row, so headers stay visible while scrolling.
 
@@ -65,8 +69,9 @@ Ask Claude Code to write this. It must implement all of the following:
 5. Runs the duplicate checks from `FORM_SPEC.md` — team name, all emails, all
    phones.
 6. If clean, appends one row in the exact column order above, with a timestamp
-   and a generated submission ID.
-7. Returns JSON: `{ ok: true, submissionId }` or
+   and a Team ID (sequential: existing row count + 1 — safe from collisions
+   because the lock from step 1 is still held).
+7. Returns JSON: `{ ok: true, teamId }` or
    `{ ok: false, error: "...", field: "..." }`.
 
 **Why the lock matters.** Two teams submitting at the same instant could both
@@ -119,6 +124,7 @@ Restart the dev server. Add the same two variables in Vercel later — see
 Submit a team with team name `TEST-001` and obviously fake details. Check:
 
 - [ ] A row appears in the Sheet with every column correct
+- [ ] Its Team ID column has a number, and that same number shows on the success screen
 - [ ] Submitting `TEST-001` again is rejected for duplicate team name
 - [ ] A different team name reusing one of those emails is rejected
 - [ ] Same for a reused phone number

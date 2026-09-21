@@ -10,7 +10,7 @@ function Row({ label, value }) {
   return (
     <div className="flex justify-between gap-4 py-1.5 text-sm">
       <span className="text-vv-text-muted">{label}</span>
-      <span className="text-right text-vv-text">{value || "—"}</span>
+      <span className="text-right text-vv-text">{value || "NIL"}</span>
     </div>
   );
 }
@@ -47,12 +47,15 @@ export default function ReviewStep({ formData, duplicateErrors, onEdit }) {
         const personErrors = duplicateErrors?.[key];
         const error = personErrors ? Object.values(personErrors).join(" ") : null;
 
+        // Only the leader has Branch/Phone — members don't collect them, so
+        // showing "NIL" for fields that were never asked for would be
+        // confusing rather than informative.
         return (
           <Group key={key} title={PERSON_LABELS[key]} onEdit={() => onEdit(STEP_FOR_PERSON[key])} error={error}>
             <Row label="Name" value={person.name} />
-            <Row label="Branch" value={branch} />
+            {key === "leader" ? <Row label="Branch" value={branch} /> : null}
             <Row label="Email" value={person.email} />
-            <Row label="Phone" value={person.phone} />
+            {key === "leader" ? <Row label="Phone" value={person.phone} /> : null}
           </Group>
         );
       })}
