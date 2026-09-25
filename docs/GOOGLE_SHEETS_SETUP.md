@@ -80,8 +80,8 @@ Ask Claude Code to write this. It must implement all of the following:
 3. Verifies a shared secret field in the payload against a value stored in
    Script Properties. Reject with an error if it doesn't match.
 4. Reads all existing rows once into memory.
-5. Runs the duplicate checks from `FORM_SPEC.md` — team name, all emails, all
-   phones. Before rejecting a team-name clash, checks whether the matching
+5. Runs the duplicate checks from `FORM_SPEC.md` — team name, leader email,
+   leader phone (member emails aren't checked across teams). Before rejecting a team-name clash, checks whether the matching
    row's Submission ID equals the incoming one — if so this is a retry of an
    attempt that already succeeded, not a real clash (see below).
 6. If clean, appends one row in the exact column order above, with a timestamp

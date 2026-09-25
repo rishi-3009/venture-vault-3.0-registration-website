@@ -46,7 +46,7 @@ Recorded so nobody relitigates them mid-build.
 | Email domain | Must end `@rbunagpur.in`, and the local part must start `26` | Keeps outsiders out, and the `26` prefix (2026 admission year) restricts registration to first years — this resolves open question #1 below |
 | Team size | 1–4, only the leader mandatory | Solo/partial teams register anyway; E-Cell pairs them up into full teams at the event. Backend supports this (see below); the form asks for all 4, but members 2-4 are visibly optional and skipped by simply leaving them blank — no separate "skip" control. |
 | Member fields | Leader fills Name, Branch, Email, Phone. Members 2-4 fill only Name + Email. | Members aren't the point of contact, and asking for Branch/Phone from people who might not even end up on this team added friction for no benefit. |
-| Duplicates | Blocked, by team name and by person | Prevents double-registration mess |
+| Duplicates | Blocked by team name, leader email and leader phone (members can repeat across teams) | Prevents double-registration mess |
 | Registration cap | None for now | Can be added later |
 | Draft saving | Yes, local | College wifi is unreliable |
 | Admin panel | No — the Sheet is enough | Scope control |

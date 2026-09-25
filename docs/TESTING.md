@@ -44,8 +44,9 @@ momentum, keyboard behaviour, and performance.
 ### Duplicates
 - [ ] Same team name → rejected, message names the team
 - [ ] Same team name in different case → still rejected
-- [ ] New team, reused email → rejected, message names the clashing team
-- [ ] New team, reused phone → rejected
+- [ ] New team, reused leader email → rejected, message names the clashing team
+- [ ] New team, reused leader phone → rejected
+- [ ] New team, member email already used on another team → **accepted** (by design)
 - [ ] Same email twice within one team → caught before submit
 - [ ] Same phone twice within one team → caught before submit
 - [ ] **No partial row is written when a submission is rejected**

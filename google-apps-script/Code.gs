@@ -40,9 +40,6 @@ var MEMBER_COLUMNS = [
   { key: "member3", name: 11, email: 12 },
 ];
 var SUBMISSION_ID_COL = 13;
-var ALL_PEOPLE_KEYS = [LEADER_COLUMNS.key].concat(
-  MEMBER_COLUMNS.map(function (m) { return m.key; })
-);
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -110,48 +107,34 @@ function handleSubmission(e) {
     }
   }
 
-  // 2. Email and phone, for each person actually submitted, against every
-  // email/phone column of every existing row. `personKey` in the response
-  // is one of our own submitted slots (leader/member1/2/3) — the thing the
-  // frontend needs in order to show the error next to the right person,
-  // regardless of which column of someone else's row it matched.
-  var emailCols = [LEADER_COLUMNS.email].concat(
-    MEMBER_COLUMNS.map(function (m) { return m.email; })
-  );
-  var phoneCols = [LEADER_COLUMNS.phone]; // only the leader has a phone column
+  // 2. Leader email and phone, against the leader columns of every existing
+  // row. Member emails are deliberately NOT checked across teams — a member
+  // can appear on more than one team, and E-Cell sorts that out at the event
+  // (see CLAUDE.md requirement 7). `personKey` tells the frontend to show the
+  // error next to the leader's fields.
+  var leader = data.leader || {};
+  var leaderEmail = (leader.email || "").trim().toLowerCase();
+  var leaderPhone = (leader.phone || "").trim();
 
-  for (var i = 0; i < ALL_PEOPLE_KEYS.length; i++) {
-    var personKey = ALL_PEOPLE_KEYS[i];
-    var person = data[personKey];
-    if (!person) continue; // slot not part of this team
-
-    var email = (person.email || "").trim().toLowerCase();
-    var phone = (person.phone || "").trim();
-
-    for (var r2 = 0; r2 < rows.length; r2++) {
-      for (var c = 0; c < emailCols.length; c++) {
-        if (email && String(rows[r2][emailCols[c]]).trim().toLowerCase() === email) {
-          return {
-            ok: false,
-            error:
-              'This email is already registered with team "' +
-              rows[r2][TEAM_NAME_COL] +
-              '". Each person can only be in one team.',
-            field: "email",
-            personKey: personKey,
-          };
-        }
-      }
-      for (var p = 0; p < phoneCols.length; p++) {
-        if (phone && String(rows[r2][phoneCols[p]]).trim() === phone) {
-          return {
-            ok: false,
-            error: 'This number is already registered with team "' + rows[r2][TEAM_NAME_COL] + '".',
-            field: "phone",
-            personKey: personKey,
-          };
-        }
-      }
+  for (var r2 = 0; r2 < rows.length; r2++) {
+    if (leaderEmail && String(rows[r2][LEADER_COLUMNS.email]).trim().toLowerCase() === leaderEmail) {
+      return {
+        ok: false,
+        error:
+          'This email is already registered as the leader of team "' +
+          rows[r2][TEAM_NAME_COL] +
+          '". Each person can only lead one team.',
+        field: "email",
+        personKey: LEADER_COLUMNS.key,
+      };
+    }
+    if (leaderPhone && String(rows[r2][LEADER_COLUMNS.phone]).trim() === leaderPhone) {
+      return {
+        ok: false,
+        error: 'This number is already registered with team "' + rows[r2][TEAM_NAME_COL] + '".',
+        field: "phone",
+        personKey: LEADER_COLUMNS.key,
+      };
     }
   }
 
@@ -163,11 +146,10 @@ function handleSubmission(e) {
   var teamId = rows.length + 1;
   var row = [new Date(), teamId, teamName];
 
-  var leader = data.leader;
-  row.push(leader ? leader.name : "");
-  row.push(leader ? leader.branch : "");
-  row.push(leader ? leader.email : "");
-  row.push(leader ? leader.phone : "");
+  row.push(leader.name || "");
+  row.push(leader.branch || "");
+  row.push(leader.email || "");
+  row.push(leader.phone || "");
 
   MEMBER_COLUMNS.forEach(function (col) {
     var person = data[col.key];

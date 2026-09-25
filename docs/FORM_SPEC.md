@@ -110,13 +110,13 @@ Selecting **Other** reveals a text input (required, 2–50 chars).
 | Prefix | Must start with `26` — encodes the 2026 admission year, so this is what restricts registration to first years |
 | Normalisation | Trim, lowercase before storing |
 | Input hints | `type="email"`, `inputmode="email"`, `autocapitalize="off"`, `autocorrect="off"` |
-| Uniqueness | Server-side, across every email in the Sheet |
+| Uniqueness | Leader only: server-side, against every existing leader email. Member emails aren't checked across teams |
 
 - Empty → `Email is required.`
 - Malformed → `That doesn't look like a valid email address.`
 - Wrong domain → `Please use your RBU email address (ending in @rbunagpur.in).`
 - Wrong prefix → `Please use your RBU email address (starts with 26, e.g. 26xxxxxxx@rbunagpur.in).`
-- Duplicate → `This email is already registered with team "X". Each person can only be in one team.`
+- Duplicate (leader only) → `This email is already registered as the leader of team "X". Each person can only lead one team.`
 - Duplicate within this form → `This email is already used by another member of your team.`
 
 > `autocapitalize="off"` matters. Mobile keyboards capitalise the first letter by
@@ -202,8 +202,10 @@ entire submission; nothing partial gets written.
 
 1. **Team name** — case-insensitive, whitespace-collapsed match against any
    existing team name.
-2. **Email** — normalised lowercase match against every email column of every row,
-   for whichever of the 4 people were actually submitted.
+2. **Email** — the leader's email only, normalised lowercase match against the
+   Leader Email column of every row. Member emails are deliberately not checked
+   across teams — a member can appear on more than one team, and E-Cell sorts
+   that out at the event.
 3. **Phone** — normalised 10-digit match against the phone column of every row.
    Only the leader has a phone, so this only ever runs on the leader's number.
 4. **Within-team** — every submitted email must differ from every other submitted

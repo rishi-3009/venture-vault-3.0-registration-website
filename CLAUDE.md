@@ -47,7 +47,7 @@ These were decided by the developer. Do not change them without asking.
 | 4 | Teams need a **leader** (mandatory); up to 3 more members are **optional** — a team can be as small as one person. Solo/partial teams get paired up by E-Cell at the event itself. The backend (`app/api/register/route.js`, `google-apps-script/Code.gs`) already supports 1–4 people; the form's UI still asks for all 4 today — the "skip this member" step is pending. See `docs/PROJECT_BRIEF.md` → "Why the backend already tolerates 1–4 people." |
 | 5 | Emails must end in **`@rbunagpur.in`**. |
 | 6 | Phone numbers: **exactly 10 digits**, Indian format. |
-| 7 | **No duplicates** — not a repeated team name, and not the same person on two teams. |
+| 7 | **No duplicates** — not a repeated team name, and not the same **leader** (email or phone) on two teams. Member emails are deliberately *not* checked across teams — a member can appear on more than one team, and E-Cell sorts that out at the event. Within one team, the same email/phone still can't appear twice. |
 | 8 | Form is **one question-group per screen** with Next/Back, not a long scroll. |
 | 9 | Answers must **survive a page refresh** (draft saved locally). |
 | 10 | No registration cap or deadline cutoff for now. |
