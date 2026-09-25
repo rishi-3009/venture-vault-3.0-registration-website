@@ -7,7 +7,7 @@ doc disagree, this doc is right.
 
 ## Step 0 — Team Name
 
-**Heading:** Let's start with your team
+**Heading:** World 1-1: Name your team
 **Field:** Team Name — single line text
 
 | Rule | Value |
@@ -43,10 +43,10 @@ a member," below).
 
 | Step | Heading | Sub-heading | Fields shown |
 |---|---|---|---|
-| 1 | Team Leader | This is who we'll contact about the event | Name, Branch, Email, Phone |
-| 2 | Member 2 (Optional) | | Name, Email |
-| 3 | Member 3 (Optional) | | Name, Email |
-| 4 | Member 4 (Optional) | | Name, Email |
+| 1 | Player 1: Team Leader | This is who we'll contact about the event | Name, Branch, Email, Phone |
+| 2 | Player 2 (Optional) | | Name, Email |
+| 3 | Player 3 (Optional) | | Name, Email |
+| 4 | Player 4 (Optional) | | Name, Email |
 
 > Note the labelling: the leader is member 1 of 4. Calling the next three
 > "Member 1/2/3" reads as a fifth and sixth person. Use "Member 2, 3, 4."
@@ -158,9 +158,9 @@ all, since those fields don't exist for them (leader only).
 
 A final line: *Please check carefully — you won't be able to edit after submitting.*
 
-Then the **Submit Registration** button.
+Then the **Submit** button (heading for this step: *Check your team*).
 
-While submitting: disable the button, show a spinner and "Submitting…". Guard
+While submitting: disable the button, show "Loading...". Guard
 against double-taps — a laggy connection makes people tap twice, and two taps
 must not produce two rows.
 
@@ -171,11 +171,14 @@ must not produce two rows.
 Currently a placeholder; real copy pending.
 
 ```
-🎉 You're registered!
+COURSE CLEAR!
+You're registered!
 
 Team "<TEAM NAME>" is confirmed for Venture Vault 3.0.
 
-Your Team ID: <TEAM ID> — remember this.
+[ boxed ]  TEAM ID
+           <TEAM ID>   ← largest text on the screen
+           Take a screenshot and remember this.
 
 [WhatsApp block — hidden until a link exists in config]
 Join the participants' group for updates:

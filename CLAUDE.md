@@ -121,8 +121,24 @@ file alone.
 The event name lives in `lib/config.js` as a single constant. Confirmed as
 **3.0**.
 
-**Hero:** plain black background with "Venture Vault 3.0" in amber. No poster
-image, no background photograph. Keep it simple.
+**Theme: Super Mario (NES).** Decided by the developer, replacing the earlier
+"plain black hero" rule.
+
+- **Hero:** Mario level background image — `public/hero-bg-mobile-v2.jpg`
+  (portrait, sprite-free) and `public/hero-bg-desktop-v2.jpg` (landscape,
+  sprites baked in), dimmed by a black overlay. "Venture Vault 3.0" in the
+  pixel font (Press Start 2P), brick colour `#cb4f1b`. On portrait screens
+  `components/MarioScene.jsx` animates Mario on a canvas (walk → mushroom →
+  hit "?" block), scroll-driven. No step 2 (Goomba stomp) — declined.
+- **Form section:** underground level (World 1-2) — black, teal brick
+  ceiling/floor, pipes + piranha plants + blue Goomba
+  (`components/UndergroundPipes.jsx`, CSS-only animation). Headings and
+  buttons in the pixel font, buttons styled as "?" blocks (`.qblock-button`);
+  labels, inputs, helper text and errors stay in the normal font for
+  readability.
+- If a background image changes, give it a **new filename** (`-v3` etc.) —
+  Next's image cache and phones' caches key on the URL and will keep
+  serving the old one otherwise.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

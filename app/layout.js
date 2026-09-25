@@ -1,4 +1,4 @@
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Space_Grotesk, Inter, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -11,6 +11,14 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+});
+
+// Retro pixel font for the hero's "Venture Vault 3.0" — matches the
+// Mario-style background. Only has one weight.
+const pressStart = Press_Start_2P({
+  variable: "--font-press-start",
+  subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata = {
@@ -26,7 +34,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${inter.variable} ${pressStart.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-vv-black">{children}</body>
     </html>

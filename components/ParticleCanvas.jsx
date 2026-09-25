@@ -3,16 +3,39 @@
 import { useEffect, useRef, useState } from "react";
 import { EVENT_NAME } from "@/lib/config";
 
-const TEXT_AMBER = [245, 166, 35];
-const TEXT_AMBER_BRIGHT = [255, 193, 69];
+// Mario brick colours (NES palette) — the dark brick fill and its lighter
+// highlight, to match the pixel-art hero background.
+const TEXT_BRICK = [203, 79, 27]; // #cb4f1b
+const TEXT_BRICK_LIGHT = [252, 152, 56];
 const LOGO_WHITE = [225, 225, 228];
 const LOGO_WHITE_BRIGHT = [255, 255, 255];
+
+// "VENTURE" / "VAULT 3.0" on two lines, so the text can be much bigger on a
+// narrow phone screen than one long line would allow.
+const TEXT_WORDS = EVENT_NAME.toUpperCase().split(" ");
+const TEXT_LINES = [TEXT_WORDS[0], TEXT_WORDS.slice(1).join(" ")];
 
 // Offscreen sampling canvas for the text — generous size so the text never
 // clips; particles are normalised by half-width so the exact size doesn't
 // matter as long as nothing gets cut off.
 const TEXT_CANVAS_W = 1800;
 const TEXT_CANVAS_H = 320;
+const TEXT_FONT_PX = 100;
+// Distance between the two lines' centres, and the whole block's height,
+// in sampling-canvas pixels.
+const TEXT_LINE_GAP = 140;
+const TEXT_BLOCK_H = TEXT_FONT_PX + TEXT_LINE_GAP;
+
+// Draws the two text lines centred on (x, y). Shared by the sampling canvas
+// and the crisp on-screen text so both land in exactly the same place.
+function drawTextLines(ctx, x, y, fontPx, fontFamily) {
+  const lineOffset = (TEXT_LINE_GAP / 2) * (fontPx / TEXT_FONT_PX);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `${fontPx}px ${fontFamily}`;
+  ctx.fillText(TEXT_LINES[0], x, y - lineOffset);
+  ctx.fillText(TEXT_LINES[1], x, y + lineOffset);
+}
 
 function isMobileViewport() {
   return window.innerWidth < 768;
@@ -106,20 +129,18 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
         // Kept for the draw loop, which needs it every frame to render the
         // crisp text overlay (see below) at the current on-screen scale.
         fontFamilyRef.current = fontFamily;
+        // fonts.ready alone can resolve before the pixel font has actually
+        // been fetched — ask for it explicitly so the text isn't sampled in
+        // a fallback font.
+        await document.fonts.load(`${TEXT_FONT_PX}px ${fontFamily}`);
+        if (cancelled) return;
 
         const textCanvas = document.createElement("canvas");
         textCanvas.width = TEXT_CANVAS_W;
         textCanvas.height = TEXT_CANVAS_H;
         const textCtx = textCanvas.getContext("2d");
         textCtx.fillStyle = "#fff";
-        textCtx.textAlign = "center";
-        textCtx.textBaseline = "middle";
-        textCtx.font = `700 100px ${fontFamily}`;
-        textCtx.fillText(
-          EVENT_NAME.toUpperCase(),
-          TEXT_CANVAS_W / 2,
-          TEXT_CANVAS_H / 2
-        );
+        drawTextLines(textCtx, TEXT_CANVAS_W / 2, TEXT_CANVAS_H / 2, TEXT_FONT_PX, fontFamily);
         const textPoints = samplePoints(textCtx, TEXT_CANVAS_W, TEXT_CANVAS_H, step);
 
         const logo = new Image();
@@ -266,12 +287,18 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
         const cx = width / 2;
         const mobile = width < 768 * dpr;
 
-        // Logo sits above the text, both centred on the same horizontal
-        // axis — one lockup, not two states of the same shape.
-        const logoCy = height * (mobile ? 0.3 : 0.32);
-        const textCy = height * (mobile ? 0.56 : 0.52);
-        const textScale = width * (mobile ? 0.5 : 0.38);
+        // Logo sits directly above the text as one lockup, centred at 36%
+        // of the screen height — above the busy bottom of the background
+        // image. textScale is the on-screen width of the widest line
+        // ("VAULT 3.0").
+        const textScale = mobile ? width * 0.85 : Math.min(width * 0.42, height * 0.9);
         const logoScale = Math.min(width, height) * (mobile ? 0.16 : 0.2);
+        const textH = (TEXT_BLOCK_H / (TEXT_CANVAS_W / 2)) * textScale;
+        const lockupGap = logoScale * 0.35;
+        const lockupH = logoScale * 2 + lockupGap + textH;
+        const lockupTop = height * 0.36 - lockupH / 2;
+        const logoCy = lockupTop + logoScale;
+        const textCy = lockupTop + logoScale * 2 + lockupGap + textH / 2;
         const size = (tier === 2 ? 3.5 : mobile ? 1.75 : 2.5) * dpr;
 
         // Three phases, all driven by scroll progress `p`:
@@ -302,8 +329,8 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
         // the way real text/an image does, so nothing is shown as pure dots
         // until it's actually started bursting apart.
         const passes = [
-          { group: "text", bright: false, color: rgb(TEXT_AMBER), alpha: alpha * (1 - crispT) },
-          { group: "text", bright: true, color: rgb(TEXT_AMBER_BRIGHT), alpha: alpha * (1 - crispT) },
+          { group: "text", bright: false, color: rgb(TEXT_BRICK), alpha: alpha * (1 - crispT) },
+          { group: "text", bright: true, color: rgb(TEXT_BRICK_LIGHT), alpha: alpha * (1 - crispT) },
           { group: "logo", bright: false, color: rgb(LOGO_WHITE), alpha: alpha * (1 - crispT) },
           { group: "logo", bright: true, color: rgb(LOGO_WHITE_BRIGHT), alpha: alpha * (1 - crispT) },
         ];
@@ -345,14 +372,17 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
         // below: dots alone can't carry the first impression.
         if (crispT > 0) {
           ctx.globalAlpha = alpha * crispT;
-          ctx.fillStyle = rgb(TEXT_AMBER_BRIGHT);
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          // The sampling canvas drew this text at 100px within a box whose
-          // half-width (TEXT_CANVAS_W / 2) maps to `textScale` on screen —
-          // matching that ratio here reproduces the same on-screen size.
-          ctx.font = `700 ${(100 * textScale) / (TEXT_CANVAS_W / 2)}px ${fontFamilyRef.current}`;
-          ctx.fillText(EVENT_NAME.toUpperCase(), cx, textCy - driftUp);
+          // The sampling canvas drew this text at TEXT_FONT_PX within a box
+          // whose half-width (TEXT_CANVAS_W / 2) maps to `textScale` on
+          // screen — matching that ratio here reproduces the same size.
+          const fontPx = (TEXT_FONT_PX * textScale) / (TEXT_CANVAS_W / 2);
+          // Black drop shadow one "font pixel" down-right (the font is drawn
+          // on an 8x8 grid), like the Super Mario title — then the brick fill.
+          const shadow = fontPx / 8;
+          ctx.fillStyle = "#000";
+          drawTextLines(ctx, cx + shadow, textCy - driftUp + shadow, fontPx, fontFamilyRef.current);
+          ctx.fillStyle = rgb(TEXT_BRICK);
+          drawTextLines(ctx, cx, textCy - driftUp, fontPx, fontFamilyRef.current);
           ctx.globalAlpha = 1;
         }
 
@@ -388,7 +418,7 @@ export default function ParticleCanvas({ tier, progressRef, active, onDowngrade 
       <canvas ref={canvasRef} className="h-full w-full" />
       <span
         ref={fontProbeRef}
-        className="font-display"
+        className="font-pixel"
         style={{ position: "absolute", visibility: "hidden", top: -9999 }}
       >
         x

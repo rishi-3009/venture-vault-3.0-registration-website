@@ -1,10 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { getImageProps } from "next/image";
 import { EVENT_NAME } from "@/lib/config";
 import HeroErrorBoundary from "./HeroErrorBoundary";
 import HeroFallback from "./HeroFallback";
+import MarioScene from "./MarioScene";
 import ParticleCanvas from "./ParticleCanvas";
+
+// Two background images: a tall one for portrait screens (phones) and a wide
+// one for landscape screens (laptops, phones turned sideways). The <picture>
+// tag below lets the browser download only the one that matches.
+// eager: it's the first thing on screen (the LCP image), so don't make the
+// browser wait to fetch it. Not `preload` — that would download both images.
+const bgCommon = { alt: "", sizes: "100vw", loading: "eager" };
+const {
+  props: { srcSet: bgDesktopSrcSet },
+} = getImageProps({ ...bgCommon, src: "/hero-bg-desktop-v2.jpg", width: 1920, height: 1080 });
+const {
+  props: { srcSet: bgMobileSrcSet, ...bgImgProps },
+} = getImageProps({ ...bgCommon, src: "/hero-bg-mobile-v2.jpg", width: 1080, height: 1920 });
 
 // Never during SSR, where `window` doesn't exist.
 // ?tier=1/2/3 in the URL is a manual override for testing each tier.
@@ -127,12 +142,31 @@ export default function Hero() {
       <h1 className="sr-only">{EVENT_NAME}</h1>
 
       <div className="sticky top-0 flex h-[100dvh] flex-col items-center justify-center overflow-hidden bg-vv-black px-5">
+        {/* Background image sits behind everything in the sticky layer, so it
+            stays put while the logo assembles/shatters and scrolls away with
+            the hero. The black overlay keeps the amber particles readable. */}
+        <picture>
+          <source media="(min-aspect-ratio: 1/1)" srcSet={bgDesktopSrcSet} />
+          <img
+            {...bgImgProps}
+            alt=""
+            srcSet={bgMobileSrcSet}
+            fetchPriority="high"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          />
+        </picture>
+        {/* Mario & co. sit on the background (under the dark overlay, so
+            they're dimmed to match it). On tier 3 (reduced motion / no
+            animation) they're drawn once, standing still. */}
+        <MarioScene progressRef={progressRef} active={active} animate={tier !== 3} />
+        <div className="pointer-events-none absolute inset-0 bg-black/70" />
+
         <div
           ref={glowRef}
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 80% 50% at 50% 40%, rgba(245, 166, 35, 0.18) 0%, rgba(122, 62, 0, 0.08) 40%, transparent 70%)",
+              "radial-gradient(ellipse 80% 50% at 50% 30%, rgba(245, 166, 35, 0.18) 0%, rgba(122, 62, 0, 0.08) 40%, transparent 70%)",
           }}
         />
 

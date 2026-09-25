@@ -38,10 +38,10 @@ function emptyFormData() {
 const TOTAL_STEPS = 6;
 const PERSON_STEP_KEYS = { 1: "leader", 2: "member1", 3: "member2", 4: "member3" };
 const STEP_TITLES = {
-  1: "Team Leader",
-  2: "Member 2 (Optional)",
-  3: "Member 3 (Optional)",
-  4: "Member 4 (Optional)",
+  1: "Player 1: Team Leader",
+  2: "Player 2 (Optional)",
+  3: "Player 3 (Optional)",
+  4: "Player 4 (Optional)",
 };
 
 // Reads localStorage exactly once per mount without a hydration mismatch:
@@ -255,7 +255,7 @@ export default function RegistrationForm() {
       ) : null}
 
       {step === 0 && (
-        <FormStep step={0} totalSteps={TOTAL_STEPS} title="Let's start with your team" onNext={handleNext} showBack={false}>
+        <FormStep step={0} totalSteps={TOTAL_STEPS} title="World 1-1: Name your team" onNext={handleNext} showBack={false}>
           <div>
             <label htmlFor="teamName" className="mb-1.5 block text-sm text-vv-text-muted">
               Team Name
@@ -307,10 +307,10 @@ export default function RegistrationForm() {
         <FormStep
           step={5}
           totalSteps={TOTAL_STEPS}
-          title="Review"
+          title="Check your team"
           onNext={handleNext}
           onBack={handleBack}
-          nextLabel="Submit Registration"
+          nextLabel="Submit"
           isSubmitting={isSubmitting}
           submittingHint="This can take up to 10 seconds — please don't tap again or close the page."
           footerError={submitError}

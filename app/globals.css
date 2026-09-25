@@ -40,10 +40,124 @@
 
   --font-display: var(--font-space-grotesk);
   --font-body: var(--font-inter);
+  --font-pixel: var(--font-press-start);
 }
 
 body {
   background: var(--vv-black);
   color: var(--vv-text);
   font-family: var(--font-body);
+}
+
+/* Underground-level (Mario World 1-2) bricks framing the register section.
+   Each is one tiny pixel tile drawn as inline SVG — 1 SVG unit = 1 NES
+   pixel, shown at 3 CSS px — then repeated sideways. No image files. */
+.underground-ceiling {
+  background-color: #000;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 8' shape-rendering='crispEdges'%3E%3Cg fill='%23008088'%3E%3Crect x='0' y='0' width='7' height='3'/%3E%3Crect x='8' y='0' width='7' height='3'/%3E%3Crect x='0' y='4' width='3' height='3'/%3E%3Crect x='4' y='4' width='7' height='3'/%3E%3Crect x='12' y='4' width='4' height='3'/%3E%3C/g%3E%3Cg fill='%2358d8e0'%3E%3Crect x='0' y='0' width='7' height='1'/%3E%3Crect x='8' y='0' width='7' height='1'/%3E%3Crect x='0' y='4' width='3' height='1'/%3E%3Crect x='4' y='4' width='7' height='1'/%3E%3Crect x='12' y='4' width='4' height='1'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 48px 24px;
+}
+
+/* Next/Submit button styled as a Mario "?" block: orange face, brown
+   outline, light top-left / dark bottom-right bevel, hard black shadow.
+   Pressing pushes it into its shadow. */
+.qblock-button {
+  background: #f8a848;
+  border: 3px solid #8c3c10;
+  box-shadow:
+    inset 3px 3px 0 #fcd8a8,
+    inset -3px -3px 0 #c86c0c,
+    4px 4px 0 #000;
+  transition:
+    transform 80ms,
+    box-shadow 80ms,
+    background-color 150ms;
+}
+
+.qblock-button:hover:not(:disabled) {
+  background: #fcbc5c;
+}
+
+.qblock-button:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow:
+    inset 3px 3px 0 #fcd8a8,
+    inset -3px -3px 0 #c86c0c,
+    1px 1px 0 #000;
+}
+
+/* Piranha plant (components/UndergroundPipes.jsx): rises out of its pipe,
+   waits, sinks back in, waits. steps() makes it move in chunky jumps like
+   the NES rather than gliding smoothly. */
+.piranha {
+  animation: piranha 4s steps(6, end) infinite;
+}
+
+@keyframes piranha {
+  0%,
+  15% {
+    transform: translateY(100%);
+  }
+  35%,
+  65% {
+    transform: translateY(0);
+  }
+  85%,
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* Blue Goomba (components/UndergroundPipes.jsx) walking back and forth
+   between the pipes. Track + body together move it from the left edge of
+   the gap to the right edge; step flips it every half second. */
+.goomba-track {
+  animation: goomba-track 9s linear infinite alternate;
+}
+
+.goomba-body {
+  animation: goomba-body 9s linear infinite alternate;
+}
+
+.goomba-step {
+  animation: goomba-step 0.5s steps(1, end) infinite;
+}
+
+@keyframes goomba-track {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes goomba-body {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes goomba-step {
+  50% {
+    transform: scaleX(-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piranha,
+  .goomba-track,
+  .goomba-body,
+  .goomba-step {
+    animation: none;
+  }
+}
+
+.underground-floor {
+  background-color: #000;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='15' height='15' fill='%23008088'/%3E%3Cg fill='%2358d8e0'%3E%3Crect width='15' height='1'/%3E%3Crect width='1' height='15'/%3E%3Crect x='3' y='6' width='5' height='1'/%3E%3Crect x='9' y='10' width='4' height='1'/%3E%3C/g%3E%3Cg fill='%23003c40'%3E%3Crect x='14' y='1' width='1' height='14'/%3E%3Crect x='1' y='14' width='14' height='1'/%3E%3Crect x='8' y='3' width='1' height='4'/%3E%3Crect x='3' y='7' width='5' height='1'/%3E%3Crect x='9' y='11' width='4' height='1'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 48px 48px;
 }

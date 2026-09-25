@@ -28,15 +28,15 @@ export default function FormStep({
             Step {step + 1} of {totalSteps}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-vv-surface-2">
+        <div className="h-1.5 w-full overflow-hidden bg-vv-surface-2">
           <div
-            className="h-full rounded-full bg-vv-amber transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            className="h-full bg-vv-amber transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
             style={{ width: `${progressPct}%` }}
           />
         </div>
       </div>
 
-      <h2 className="text-[20px] font-semibold leading-[1.3] text-vv-text md:text-[24px]">
+      <h2 className="font-pixel text-[14px] leading-[1.6] text-vv-text uppercase md:text-[17px]">
         {title}
       </h2>
       {subtitle ? (
@@ -60,7 +60,7 @@ export default function FormStep({
             type="button"
             onClick={onBack}
             disabled={isSubmitting}
-            className="h-[52px] flex-1 rounded-xl border border-vv-border bg-transparent font-medium text-vv-text-muted transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-[52px] flex-1 border-[3px] border-vv-border bg-transparent font-pixel text-[11px] text-vv-text-muted uppercase transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Back
           </button>
@@ -69,9 +69,9 @@ export default function FormStep({
           type="button"
           onClick={onNext}
           disabled={isSubmitting}
-          className="h-[52px] flex-[2] rounded-xl bg-vv-amber font-semibold text-vv-black transition-all duration-150 hover:bg-vv-amber-bright active:scale-[0.98] active:bg-vv-amber-deep disabled:cursor-not-allowed disabled:opacity-40"
+          className="qblock-button h-[52px] flex-[2] px-2 font-pixel text-[11px] leading-[1.6] text-[#3a1400] uppercase disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isSubmitting ? "Submitting…" : nextLabel}
+          {isSubmitting ? "Loading..." : nextLabel}
         </button>
       </div>
 
