@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { REGISTRATIONS_OPEN } from "@/lib/config";
 
 // This is the preview card WhatsApp (and iMessage, Slack, etc.) shows when
 // someone shares the site link — how ~500 people will first see it. Next.js
@@ -52,7 +53,7 @@ export default async function Image() {
           E-Cell RBU
         </div>
         <div style={{ display: "flex", fontSize: 28, color: "#a1a1a6", marginTop: 30 }}>
-          Register Now
+          {REGISTRATIONS_OPEN ? "Register Now" : "Registrations Closed"}
         </div>
       </div>
     ),

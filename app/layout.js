@@ -1,5 +1,6 @@
 import { Space_Grotesk, Inter, Press_Start_2P } from "next/font/google";
 import "./globals.css";
+import { REGISTRATIONS_OPEN } from "@/lib/config";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -23,7 +24,9 @@ const pressStart = Press_Start_2P({
 
 export const metadata = {
   title: "Venture Vault 3.0 — E-Cell RBU",
-  description: "Register your team for Venture Vault 3.0.",
+  description: REGISTRATIONS_OPEN
+    ? "Register your team for Venture Vault 3.0."
+    : "Registrations for Venture Vault 3.0 are closed — all slots have been filled.",
 };
 
 export const viewport = {

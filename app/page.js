@@ -1,9 +1,13 @@
 import Hero from "@/components/Hero";
 import RegisterHeading from "@/components/RegisterHeading";
 import RegistrationForm from "@/components/RegistrationForm";
+import RegistrationsClosed from "@/components/RegistrationsClosed";
 import UndergroundPipes from "@/components/UndergroundPipes";
+import { REGISTRATIONS_OPEN } from "@/lib/config";
 
 export default function Home() {
+  if (!REGISTRATIONS_OPEN) return <RegistrationsClosed />;
+
   return (
     <main>
       <Hero />

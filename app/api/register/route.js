@@ -7,6 +7,7 @@ import {
   normalizeEmail,
   normalizePhone,
 } from "@/lib/validation";
+import { REGISTRATIONS_OPEN } from "@/lib/config";
 
 // Resolves "Other" + branchOther down to a single branch string, and
 // normalises email/phone the same way lib/validation.js's normalizers do —
@@ -31,6 +32,15 @@ const MEMBER_KEYS = ["member1", "member2", "member3"];
 // security." Anyone can open devtools and POST here directly, skipping the
 // form entirely, so nothing from the client is trusted without re-checking.
 export async function POST(request) {
+  // Checked before anything else: hiding the form isn't enough, since a tab
+  // left open from before the close (or a direct POST) can still reach here.
+  if (!REGISTRATIONS_OPEN) {
+    return Response.json(
+      { ok: false, error: "Registrations are closed — all slots have been filled." },
+      { status: 403 }
+    );
+  }
+
   let body;
   try {
     body = await request.json();
